@@ -1,17 +1,14 @@
-# JSONL（meta.role）対応 マッチングアプリ
+# AI↔他分野 推薦アプリ（E5固定 / データ差し替え対応）
 
-このJSONLは 1行が次のような構造：
-- meta.role に 'AI_researcher' などが入る
+- デフォルトでは `data/` 配下の JSONL / CSV を使用します。
+- 必要ならサイドバーから **JSONL / アンケートCSV** をアップロードして差し替えできます。
+  - JSONL: `.jsonl`
+  - CSV: `id,url` 列がある想定（URL列が無い場合は空になります）
 
-本アプリは `roleのパス`（デフォルト meta.role）でAI研究者と他分野研究者を分離します。
+E5の構造（query:/passage:、normalize_embeddings=True）は変更していません。
 
 ## 起動
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
-
-## 使い方
-- サイドバーで JSONL を選択
-- roleのパス（通常 meta.role）と role値（例: AI_researcher / Other_field_researcher 等）を設定
-- 検索方向とTop-Kを選択して検索
