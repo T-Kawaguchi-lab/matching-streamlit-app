@@ -615,7 +615,7 @@ all_labels = df.apply(
     axis=1
 ).tolist()
 
-sel_all = st.selectbox("人物（全員）", all_labels, index=0)
+sel_all = st.selectbox("研究者リスト", all_labels, index=0)
 sel_all_idx = all_labels.index(sel_all)
 
 # ✅ 選ばれた人物（df上の行）
@@ -644,7 +644,7 @@ else:
 # ✅ 以降の表示は「query_df側のrow」で統一（ここが今までの row と同じ役割）
 row = query_df.iloc[sel_idx]
 
-st.caption(f"表示: {query_label} → {doc_label}")
+st.write(f"####### {query_label} → {doc_label}")
 
 st.write("##### 入力データ確認（embed_text）")
 
