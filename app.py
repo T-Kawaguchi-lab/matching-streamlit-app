@@ -551,35 +551,6 @@ else:
 ai_df = df[df["role_norm"] == "ai_researcher"].reset_index(drop=True)
 other_df = df[df["role_norm"] == "other_field_researcher"].reset_index(drop=True)
 
-st.write("### ✅ デバッグ：埋め込み用テキスト確認（embed_text）")
-
-debug_id = st.selectbox(
-    "確認したい名前を選んでください",
-    df["name"].tolist(),
-    index=0
-)
-
-row = df[df["name"] == debug_id].iloc[0]
-
-st.write("**role_norm:**", row["role_norm"])
-st.write("**name:**", row["name"])
-# ✅ URL表示（クリック可能）
-if "url" in row and pd.notna(row["url"]):
-    st.write("**アンケートURL:**")
-    st.link_button("open", row["url"])   # ←おすすめ
-    # 代替案：
-    # st.write(row["url"])
-else:
-    st.write("**アンケートURL:** なし")
-# ✅ TRIOS matchedurl 表示（クリック可能）
-if "matched_url" in row and pd.notna(row["matched_url"]) and str(row["matched_url"]).strip():
-    st.write("**TRIOS URL:**")
-    st.link_button("open", row["matched_url"])
-else:
-    st.write("**TRIOS URL:** なし")
-st.write("**embed_text 文字数:**", len(row["embed_text"]))
-st.text_area("embed_text（類似度計算に使う全文）", row["embed_text"], height=400)
-
 c1, c2, c3 = st.columns(3)
 c1.metric("総件数", len(df))
 c2.metric("AI研究者", len(ai_df))
@@ -634,6 +605,33 @@ labels = query_df.apply(
 
 sel = st.selectbox(query_label, labels, index=0)
 sel_idx = labels.index(sel)
+
+# ✅ 上で選んだ人物の行（query_df）
+row = query_df.iloc[sel_idx]
+
+st.write("### 入力データ確認（embed_text）")
+
+st.write("**role_norm:**", row.get("role_norm", ""))
+st.write("**name:**", row.get("name", ""))
+
+# ✅ URL表示（クリック可能）
+if pd.notna(row.get("url", None)) and str(row.get("url", "")).strip():
+    st.write("**アンケートURL:**")
+    st.link_button("open", str(row["url"]))
+else:
+    st.write("**アンケートURL:** なし")
+
+# ✅ TRIOS matched_url 表示（クリック可能）
+if pd.notna(row.get("matched_url", None)) and str(row.get("matched_url", "")).strip():
+    st.write("**TRIOS URL:**")
+    st.link_button("open", str(row["matched_url"]))
+else:
+    st.write("**TRIOS URL:** なし")
+
+# embed_text
+embed_text = str(row.get("embed_text", ""))  # NaN対策
+st.write("**embed_text 文字数:**", len(embed_text))
+st.text_area("embed_text（類似度計算に使う全文）", embed_text, height=400)
 
 # ---- 全件表示（ここから即時）----
 sims = sim_matrix[sel_idx]  # shape: [n_doc]
