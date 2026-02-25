@@ -644,9 +644,9 @@ else:
 # ✅ 以降の表示は「query_df側のrow」で統一（ここが今までの row と同じ役割）
 row = query_df.iloc[sel_idx]
 
-st.write(f"####### {query_label} → {doc_label}")
+st.write(f"{query_label} → {doc_label}")
 
-st.write("##### 入力データ確認（embed_text）")
+st.write("##### 入力データ（embed_text）")
 
 # 横4列
 col1, col2, col3, col4 = st.columns(4)
