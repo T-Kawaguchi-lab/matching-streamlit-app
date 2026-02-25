@@ -27,7 +27,7 @@ TEXT_KEY_PRIORITY = [
 ]
 
 st.set_page_config(page_title="AI↔他分野 推薦（E5）vo2", layout="wide")
-st.title("AI研究者 ↔ 他分野研究者 推薦（両者TRIOSあり）")
+st.title("AI研究者 ↔ 他分野研究者 推薦（AI研究者と他分野研究者TRIOSあり）")
 st.caption("E5（query:/passage:）+ normalize_embeddings=True を使用して類似度を計算します。")
 
 APP_DIR = Path(__file__).resolve().parent
