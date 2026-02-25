@@ -627,7 +627,7 @@ with col3:
     url = row.get("url", "")
     if pd.notna(url) and str(url).strip():
         st.markdown(
-            f'**アンケートURL**<br><a href="{url}" target="_blank">{url}</a>',
+            f'**アンケートURL**<br><a href="{url}" target="_blank">見る</a>',
             unsafe_allow_html=True
         )
     else:
@@ -638,7 +638,7 @@ with col4:
     trios = row.get("matched_url", "")
     if pd.notna(trios) and str(trios).strip():
         st.markdown(
-            f'**TRIOS URL**<br><a href="{trios}" target="_blank">{trios}</a>',
+            f'**TRIOS URL**<br><a href="{trios}" target="_blank">見る</a>',
             unsafe_allow_html=True
         )
     else:
