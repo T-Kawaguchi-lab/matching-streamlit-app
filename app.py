@@ -611,22 +611,38 @@ row = query_df.iloc[sel_idx]
 
 st.write("### 入力データ確認（embed_text）")
 
-st.write("**role_norm:**", row.get("role_norm", ""))
-st.write("**name:**", row.get("name", ""))
+# 横4列
+col1, col2, col3, col4 = st.columns(4)
 
-# ✅ URL表示（クリック可能）
-if pd.notna(row.get("url", None)) and str(row.get("url", "")).strip():
-    st.write("**アンケートURL:**")
-    st.link_button("open", str(row["url"]))
-else:
-    st.write("**アンケートURL:** なし")
+# role_norm
+with col1:
+    st.markdown(f"**role_norm**<br>{row.get('role_norm','')}", unsafe_allow_html=True)
 
-# ✅ TRIOS matched_url 表示（クリック可能）
-if pd.notna(row.get("matched_url", None)) and str(row.get("matched_url", "")).strip():
-    st.write("**TRIOS URL:**")
-    st.link_button("open", str(row["matched_url"]))
-else:
-    st.write("**TRIOS URL:** なし")
+# name
+with col2:
+    st.markdown(f"**name**<br>{row.get('name','')}", unsafe_allow_html=True)
+
+# アンケートURL（ボタンじゃないリンク）
+with col3:
+    url = row.get("url", "")
+    if pd.notna(url) and str(url).strip():
+        st.markdown(
+            f'**アンケートURL**<br><a href="{url}" target="_blank">{url}</a>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown("**アンケートURL**<br>なし", unsafe_allow_html=True)
+
+# TRIOS URL
+with col4:
+    trios = row.get("matched_url", "")
+    if pd.notna(trios) and str(trios).strip():
+        st.markdown(
+            f'**TRIOS URL**<br><a href="{trios}" target="_blank">{trios}</a>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown("**TRIOS URL**<br>なし", unsafe_allow_html=True)
 
 # embed_text
 embed_text = str(row.get("embed_text", ""))  # NaN対策
