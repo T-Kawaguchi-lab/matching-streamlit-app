@@ -596,8 +596,10 @@ else:
     sim_matrix = mats["sim_other_to_ai"]  # [n_other, n_ai]
     query_label = "他分野研究者（query）"
     doc_label = "AI研究者（推薦先）"
-
-st.write("### 人物を選択"),("検索したい人物を選んでください")
+st.markdown(
+    '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
+    unsafe_allow_html=True
+)
 labels = query_df.apply(
     lambda r: f'{r["name"]} | {r["affiliation"]} | {r["position"]} | {r["research_field"]}',
     axis=1
