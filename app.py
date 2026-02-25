@@ -628,24 +628,21 @@ if picked_role == "ai_researcher":
     query_df = ai_df
     doc_df = other_df
     sim_matrix = mats["sim_ai_to_other"]  # [n_ai, n_other]
-    query_label = "AI研究者（query）"
-    doc_label = "他分野研究者（推薦先）"
+    query_label = "AI研究者"
+    doc_label = "他分野研究者"
     # ai_df の中での index を特定（id で確実に一致させる）
     sel_idx = int(ai_df.index[ai_df["id"] == picked_id][0])
 else:
     query_df = other_df
     doc_df = ai_df
     sim_matrix = mats["sim_other_to_ai"]  # [n_other, n_ai]
-    query_label = "他分野研究者（query）"
-    doc_label = "AI研究者（推薦先）"
+    query_label = "他分野研究者"
+    doc_label = "AI研究者"
     # other_df の中での index を特定
     sel_idx = int(other_df.index[other_df["id"] == picked_id][0])
 
 # ✅ 以降の表示は「query_df側のrow」で統一（ここが今までの row と同じ役割）
 row = query_df.iloc[sel_idx]
-
-st.write(f"{query_label} → {doc_label}")
-
 st.write("##### 入力データ（embed_text）")
 
 # 横4列
@@ -697,9 +694,7 @@ res.insert(1, "similarity", sims[order_idx].astype(float))
 show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matched_url"]
 res_show = res[show_cols].copy()
 
-st.subheader("検索結果（全件）")
-st.caption(f"表示: {query_label} → {doc_label}（件数: {len(res_show)}）")
-
+st.subheader(f"検索結果（{doc_label}推薦リスト）  件数: {len(res_show)}")
 try:
     st.dataframe(
         res_show,
