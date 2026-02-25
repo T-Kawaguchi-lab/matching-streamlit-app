@@ -663,7 +663,6 @@ show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "res
 res_show = res[show_cols].copy()
 
 st.subheader("検索結果（全件）")
-st.caption(f"使用モデル: {DEFAULT_MODEL}（事前計算済み / E5 query:/passage: / normalize_embeddings=True）")
 st.caption(f"表示: {query_label} → {doc_label}（件数: {len(res_show)}）")
 
 try:
@@ -682,6 +681,7 @@ try:
 except Exception:
     st.dataframe(res_show, use_container_width=True, height=700, hide_index=True)
 
+st.caption(f"使用モデル: {DEFAULT_MODEL}（事前計算済み / E5 query:/passage: / normalize_embeddings=True）")
 # ---- ダウンロードも全件 ----
 csv_bytes = res_show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
 st.download_button(
