@@ -601,9 +601,31 @@ st.markdown(
     unsafe_allow_html=True
 )
 labels = query_df.apply(
-    lambda r: f'{r["name"]} | {r["affiliation"]} | {r["position"]} | {r["research_field"]}',
+    lambda r:
+    f'👤 {r["name"]} ｜ '
+    f'{r["affiliation"]} ｜ '
+    f'{r["position"]} ｜ '
+    f'{r["research_field"]}',
     axis=1
 ).tolist()
+
+st.markdown(
+    """
+    <style>
+    div[data-baseweb="select"] {
+        width: 100% !important;
+        font-size: 18px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+sel = st.selectbox(
+    "人物を選択",
+    labels,
+    index=0
+)
 
 sel = st.selectbox(query_label, labels, index=0)
 sel_idx = labels.index(sel)
