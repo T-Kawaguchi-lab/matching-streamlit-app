@@ -650,7 +650,7 @@ col1, col2, col3, col4 = st.columns(4)
 
 # role_norm
 with col1:
-    st.markdown(f"研究者区分<br>{query_label}", unsafe_allow_html=True)
+    st.markdown(f"**研究者区分**<br>{query_label}", unsafe_allow_html=True)
 
 # name
 with col2:
