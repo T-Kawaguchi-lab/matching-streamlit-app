@@ -643,7 +643,7 @@ res = doc_df.iloc[order_idx].copy()
 res.insert(0, "rank", np.arange(1, len(res) + 1))
 res.insert(1, "similarity", sims[order_idx].astype(float))
 
-show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matchedurl"]
+show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matched_url"]
 res_show = res[show_cols].copy()
 
 st.subheader("検索結果（全件）")
@@ -657,7 +657,7 @@ try:
         height=700,
         column_config={
             "url": st.column_config.LinkColumn("アンケートURL", display_text="open"),
-            "matchedurl": st.column_config.LinkColumn("TRIOS URL", display_text="open"),
+            "matched_url": st.column_config.LinkColumn("TRIOS URL", display_text="open"),
             "similarity": st.column_config.NumberColumn("類似度", format="%.4f"),
             "rank": st.column_config.NumberColumn("順位"),
         },
