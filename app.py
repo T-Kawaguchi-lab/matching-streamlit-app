@@ -611,7 +611,7 @@ sel_idx = labels.index(sel)
 # ✅ 上で選んだ人物の行（query_df）
 row = query_df.iloc[sel_idx]
 
-st.write("### 入力データ確認（embed_text）")
+st.write("##### 入力データ確認（embed_text）")
 
 # 横4列
 col1, col2, col3, col4 = st.columns(4)
