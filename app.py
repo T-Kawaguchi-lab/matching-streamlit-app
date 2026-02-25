@@ -258,9 +258,9 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
             ja.append(f"必要とするAI領域のヒントは{_join(need_ai_hints, sep='、')}です。")
 
         if trios_topics:
-            ja.append(f"（TRIOS）研究トピックは{_join(trios_topics, sep='、')}です。")
+            ja.append(f"研究トピックは{_join(trios_topics, sep='、')}です。")
         if trios_papers:
-            ja.append(f"（TRIOS）関連論文は{_join(trios_papers, sep='、')}です。")
+            ja.append(f"関連論文は{_join(trios_papers, sep='、')}です。")
 
         ja_text = " ".join(ja).strip()
 
@@ -292,9 +292,9 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
             en.append(f"Needed AI categories include {_join(need_ai_hints)}.")
 
         if trios_topics:
-            en.append(f"(TRIOS) Research topics include {_join(trios_topics)}.")
+            en.append(f"Research topics include {_join(trios_topics)}.")
         if trios_papers:
-            en.append(f"(TRIOS) Related papers include {_join(trios_papers)}.")
+            en.append(f"Related papers include {_join(trios_papers)}.")
 
         en_text = " ".join(en).strip()
 
@@ -326,9 +326,9 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
     if current_main_research_themes:
         ja.append(f"現在の主な研究テーマは{_join(current_main_research_themes, sep='、')}です。")
     if trios_topics:
-        ja.append(f"（TRIOS）研究トピックは{_join(trios_topics, sep='、')}です。")
+        ja.append(f"研究トピックは{_join(trios_topics, sep='、')}です。")
     if trios_papers:
-        ja.append(f"（TRIOS）関連論文は{_join(trios_papers, sep='、')}です。")
+        ja.append(f"関連論文は{_join(trios_papers, sep='、')}です。")
     ja_text = " ".join(ja).strip()
 
     # 英語文
@@ -342,12 +342,10 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
     if current_main_research_themes:
         en.append(f"My current main research themes include {_join(current_main_research_themes)}.")
     if trios_topics:
-        en.append(f"(TRIOS) Research topics include {_join(trios_topics)}.")
+        en.append(f"Research topics include {_join(trios_topics)}.")
     if trios_papers:
-        en.append(f"(TRIOS) Related papers include {_join(trios_papers)}.")
+        en.append(f"Related papers include {_join(trios_papers)}.")
     en_text = " ".join(en).strip()
-
-    return (ja_text + "\n" + en_text).strip()
 
     # 両方入れる（空は除外）
     parts = []
@@ -356,7 +354,7 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
     if en_text:
         parts.append(en_text)
 
-    return "\n".join(parts).strip()
+    return (ja_text + "\n" + en_text).strip()
 
 def get_text_by_priority(r: Dict[str, Any], priorities: List[str]) -> str:
     for key in priorities:
@@ -527,6 +525,7 @@ for i, r in enumerate(rows, start=1):
 
     # ✅ 新JSONLの主要情報も含めて埋め込みテキストを作る（重要）
     embed_text = build_embedding_text_selected_fields(r)
+    matched_url = (get_nested(r, "trios.matched_url") or "").strip()
 
     records.append({
         "id": rid,
@@ -537,6 +536,7 @@ for i, r in enumerate(rows, start=1):
         "research_field": meta.get("research_field") or "",
         "summary": summarize_one_line(r),
         "embed_text": embed_text,
+        "matched_url": matched_url,
         # 参考: ここに追加情報を保持（UIは変えないので表示列には使わない）
         "role_raw": "" if role_raw is None else str(role_raw),
     })
@@ -571,6 +571,12 @@ if "url" in row and pd.notna(row["url"]):
     # st.write(row["url"])
 else:
     st.write("**アンケートURL:** なし")
+# ✅ TRIOS matchedurl 表示（クリック可能）
+if "matched_url" in row and pd.notna(row["matched_url"]) and str(row["matched_url"]).strip():
+    st.write("**TRIOS URL:**")
+    st.link_button("open", row["matched_url"])
+else:
+    st.write("**TRIOS URL:** なし")
 st.write("**embed_text 文字数:**", len(row["embed_text"]))
 st.text_area("embed_text（類似度計算に使う全文）", row["embed_text"], height=400)
 
@@ -637,7 +643,7 @@ res = doc_df.iloc[order_idx].copy()
 res.insert(0, "rank", np.arange(1, len(res) + 1))
 res.insert(1, "similarity", sims[order_idx].astype(float))
 
-show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url"]
+show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matchedurl"]
 res_show = res[show_cols].copy()
 
 st.subheader("検索結果（全件）")
@@ -651,6 +657,7 @@ try:
         height=700,
         column_config={
             "url": st.column_config.LinkColumn("アンケートURL", display_text="open"),
+            "matchedurl": st.column_config.LinkColumn("TRIOS URL", display_text="open"),
             "similarity": st.column_config.NumberColumn("類似度", format="%.4f"),
             "rank": st.column_config.NumberColumn("順位"),
         },
