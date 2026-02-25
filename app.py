@@ -621,12 +621,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-sel = st.selectbox(
-    "人物を選択",
-    labels,
-    index=0
-)
-
 sel = st.selectbox(query_label, labels, index=0)
 sel_idx = labels.index(sel)
 
