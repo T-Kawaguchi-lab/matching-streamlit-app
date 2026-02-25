@@ -597,8 +597,7 @@ else:
     query_label = "他分野研究者（query）"
     doc_label = "AI研究者（推薦先）"
 
-st.write("### 人物を選択"),st.write("検索したい人物を選んでください")
-
+st.write("### 人物を選択"),("検索したい人物を選んでください")
 labels = query_df.apply(
     lambda r: f'{r["name"]} | {r["affiliation"]} | {r["position"]} | {r["research_field"]}',
     axis=1
