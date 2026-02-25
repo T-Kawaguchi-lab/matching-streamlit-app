@@ -598,6 +598,7 @@ else:
     doc_label = "AI研究者（推薦先）"
 
 st.write("### 人物を選択")
+st.write("検索したい人物を選んでください")
 labels = query_df.apply(
     lambda r: f'{r["name"]} | {r["affiliation"]} | {r["position"]} | {r["research_field"]}',
     axis=1
@@ -647,7 +648,7 @@ with col4:
 # embed_text
 embed_text = str(row.get("embed_text", ""))  # NaN対策
 st.write("**embed_text 文字数:**", len(embed_text))
-st.text_area("embed_text（類似度計算に使う全文）", embed_text, height=400)
+st.text_area("embed_text（類似度計算に使った全文）", embed_text, height=400)
 
 # ---- 全件表示（ここから即時）----
 sims = sim_matrix[sel_idx]  # shape: [n_doc]
