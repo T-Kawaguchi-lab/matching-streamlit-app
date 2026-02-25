@@ -649,7 +649,7 @@ with col4:
 # embed_text
 embed_text = str(row.get("embed_text", ""))  # NaN対策
 st.write("**embed_text 文字数:**", len(embed_text))
-st.text_area("embed_text（類似度計算に使った全文）", embed_text, height=400)
+st.text_area("embed_text（類似度計算に使った全文）", embed_text, height=250)
 
 # ---- 全件表示（ここから即時）----
 sims = sim_matrix[sel_idx]  # shape: [n_doc]
