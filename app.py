@@ -579,36 +579,16 @@ st.success("事前計算完了")
 
 
 # ------------------------
-# Fast UI: pick person -> show ALL targets
+# Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
-st.write("### 設定")
-direction = st.radio("検索方向", ["AI研究者 → 他分野研究者", "他分野研究者 → AI研究者"], index=0, horizontal=True)
 
-if direction == "AI研究者 → 他分野研究者":
-    query_df = ai_df
-    doc_df = other_df
-    sim_matrix = mats["sim_ai_to_other"]  # [n_ai, n_other]
-    query_label = "AI研究者（query）"
-    doc_label = "他分野研究者（推薦先）"
-else:
-    query_df = other_df
-    doc_df = ai_df
-    sim_matrix = mats["sim_other_to_ai"]  # [n_other, n_ai]
-    query_label = "他分野研究者（query）"
-    doc_label = "AI研究者（推薦先）"
+# ✅ 人物選択（全員）
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
 )
-labels = query_df.apply(
-    lambda r:
-    f'👤 {r["name"]} ｜ '
-    f'{r["affiliation"]} ｜ '
-    f'{r["position"]} ｜ '
-    f'{r["research_field"]}',
-    axis=1
-).tolist()
 
+# selectbox の見た目（幅・文字サイズ）
 st.markdown(
     """
     <style>
@@ -621,11 +601,50 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-sel = st.selectbox(query_label, labels, index=0)
-sel_idx = labels.index(sel)
+# 全員から選ぶ labels を作る（role も見えるように）
+def role_jp(role_norm: str) -> str:
+    return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-# ✅ 上で選んだ人物の行（query_df）
+all_labels = df.apply(
+    lambda r:
+    f'👤 {r["name"]} ｜ '
+    f'{r["affiliation"]} ｜ '
+    f'{r["position"]} ｜ '
+    f'{r["research_field"]} ｜ '
+    f'【{role_jp(r["role_norm"])}】',
+    axis=1
+).tolist()
+
+sel_all = st.selectbox("人物（全員）", all_labels, index=0)
+sel_all_idx = all_labels.index(sel_all)
+
+# ✅ 選ばれた人物（df上の行）
+picked = df.iloc[sel_all_idx]
+picked_id = picked["id"]
+picked_role = picked["role_norm"]
+
+# ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
+if picked_role == "ai_researcher":
+    query_df = ai_df
+    doc_df = other_df
+    sim_matrix = mats["sim_ai_to_other"]  # [n_ai, n_other]
+    query_label = "AI研究者（query）"
+    doc_label = "他分野研究者（推薦先）"
+    # ai_df の中での index を特定（id で確実に一致させる）
+    sel_idx = int(ai_df.index[ai_df["id"] == picked_id][0])
+else:
+    query_df = other_df
+    doc_df = ai_df
+    sim_matrix = mats["sim_other_to_ai"]  # [n_other, n_ai]
+    query_label = "他分野研究者（query）"
+    doc_label = "AI研究者（推薦先）"
+    # other_df の中での index を特定
+    sel_idx = int(other_df.index[other_df["id"] == picked_id][0])
+
+# ✅ 以降の表示は「query_df側のrow」で統一（ここが今までの row と同じ役割）
 row = query_df.iloc[sel_idx]
+
+st.caption(f"表示: {query_label} → {doc_label}")
 
 st.write("##### 入力データ確認（embed_text）")
 
