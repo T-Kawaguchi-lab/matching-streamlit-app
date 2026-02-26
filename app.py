@@ -582,7 +582,7 @@ st.success("事前計算完了")
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
 st.markdown(
-    '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
+    '### 人物を選択 <small>（名前を入力してください）</small>',
     unsafe_allow_html=True
 )
 
@@ -615,7 +615,7 @@ options = [None] + list(id_to_label.keys())
 
 def format_func(_id):
     if _id is None:
-        return "🔍 名前を入力してください（漢字で検索）"
+        return "🔍(検索)"
     return id_to_label[_id]
 
 picked_id = st.selectbox(
