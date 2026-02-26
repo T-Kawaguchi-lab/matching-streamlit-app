@@ -599,13 +599,13 @@ st.markdown(
 try:
     from pykakasi import kakasi
     _kks = kakasi()
-    _kks.setMode("J", "H")  # 漢字->ひらがな
-    _kks.setMode("K", "H")  # カタカナ->ひらがな
-    _kks.setMode("H", "H")  # ひらがな->ひらがな
+    _kks.setMode("J", "H")
+    _kks.setMode("K", "H")
+    _kks.setMode("H", "H")
     _conv = _kks.getConverter()
 
     def to_hira(s: str) -> str:
-        return _conv.do(str(s)).strip()
+        return _conv.do(str(s)).strip().replace(" ", "")
 except Exception:
     def to_hira(s: str) -> str:
         return ""
@@ -613,33 +613,46 @@ except Exception:
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-# ✅ id → 表示文字
-# 重要：検索が前方一致でもヒットするように、先頭に「ひらがな」を置く
-id_to_label = {}
+# ✅ 検索用文字列を options 側に持たせるためのクラス
+class PersonOption:
+    def __init__(self, _id: str, search_text: str, display_text: str):
+        self.id = _id
+        self.search_text = search_text
+        self.display_text = display_text
+
+    # ここが重要：selectboxの検索は str(option) を使う
+    def __str__(self):
+        return self.search_text
+
+opts = []
 for _, r in df.iterrows():
+    _id = str(r["id"])
     name = str(r.get("name", ""))
     hira = to_hira(name)
-    hira = hira.replace(" ", "")  # 念のため
+    aff = str(r.get("affiliation", ""))
+    pos = str(r.get("position", ""))
+    field = str(r.get("research_field", ""))
+    role = role_jp(str(r.get("role_norm", "")))
 
-    label = (
-        f'{hira} ｜ '              # ← ここがポイント（先頭）
-        f'👤 {name} ｜ '
-        f'{r.get("affiliation","")} ｜ '
-        f'{r.get("position","")} ｜ '
-        f'{r.get("research_field","")} ｜ '
-        f'【{role_jp(r.get("role_norm",""))}】'
+    # ✅ 検索に引っかかる文字列（ここに ひらがな を入れる）
+    search_text = f"{name} {hira} {aff} {pos} {field} {role}"
+
+    # ✅ 表示（今までのリッチ表示）
+    display_text = (
+        f'👤 {name} ｜ {aff} ｜ {pos} ｜ {field} ｜ 【{role}】'
     )
-    id_to_label[r["id"]] = label
+
+    opts.append(PersonOption(_id=_id, search_text=search_text, display_text=display_text))
 
 # ✅ 先頭に None（ダミー）
-options = [None] + list(id_to_label.keys())
+options = [None] + opts
 
-def format_func(_id):
-    if _id is None:
+def format_func(x):
+    if x is None:
         return "🔍 名前を入力してください（クリックしてから入力）"
-    return id_to_label[_id]
+    return x.display_text
 
-picked_id = st.selectbox(
+picked = st.selectbox(
     "研究者リスト",
     options=options,
     format_func=format_func,
@@ -647,11 +660,12 @@ picked_id = st.selectbox(
     key="person_selectbox",
 )
 
-if picked_id is None:
+if picked is None:
     st.stop()
 
-picked = df[df["id"] == picked_id].iloc[0]
-picked_role = picked["role_norm"]
+picked_id = picked.id
+picked_row = df[df["id"] == picked_id].iloc[0]
+picked_role = picked_row["role_norm"]
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
     query_df = ai_df
