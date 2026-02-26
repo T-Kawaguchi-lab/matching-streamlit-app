@@ -581,43 +581,72 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
+
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
 )
 
-st.markdown(
-    """
-    <style>
-    div[data-baseweb="select"] { width: 100% !important; font-size: 18px; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-def role_jp(role_norm: str) -> str:
+def role_jp(role_norm):
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-# id → 表示文字
-id_to_label = {
-    r["id"]: (
+def make_label(r):
+    return (
         f'👤 {r["name"]} ｜ '
         f'{r["affiliation"]} ｜ '
         f'{r["position"]} ｜ '
         f'{r["research_field"]} ｜ '
         f'【{role_jp(r["role_norm"])}】'
     )
-    for _, r in df.iterrows()
-}
 
-# ✅ 先頭に None を追加
-options = [None] + list(id_to_label.keys())
+# -----------------------
+# 初期値
+# -----------------------
 
-# 表示用関数
-def format_func(_id):
-    if _id is None:
-        return "🔍 名前を入力してください"
-    return id_to_label[_id]
+if "search_text" not in st.session_state:
+    st.session_state.search_text = ""
+
+# -----------------------
+# 入力欄
+# -----------------------
+
+search = st.text_input(
+    "",
+    value=st.session_state.search_text,
+    placeholder="🔍 名前を入力してください",
+    key="search_box"
+)
+
+# 入力内容を保存
+st.session_state.search_text = search
+
+# -----------------------
+# 候補抽出
+# -----------------------
+
+if search:
+
+    cand_df = df[df["name"].str.startswith(search, na=False)]
+
+    if not cand_df.empty:
+
+        labels = cand_df.apply(make_label, axis=1).tolist()
+
+        sel = st.selectbox(
+            "候補",
+            labels,
+            index=0
+        )
+
+        picked = cand_df.iloc[labels.index(sel)]
+        picked_id = picked["id"]
+        picked_role = picked["role_norm"]
+
+    else:
+        st.warning("候補がありません")
+
+else:
+    st.info("名前を入力してください")
 
 picked_id = st.selectbox(
     "研究者リスト",
