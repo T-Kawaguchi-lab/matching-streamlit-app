@@ -626,11 +626,6 @@ picked_id = st.selectbox(
     index=0,  # ← ここで None が表示される
 )
 
-# まだ選択されていない場合
-if picked_id is None:
-    st.info("名前を入力して研究者を選択してください")
-    st.stop()
-
 # 選択後
 picked = df[df["id"] == picked_id].iloc[0]
 picked_role = picked["role_norm"]
