@@ -725,11 +725,18 @@ except Exception:
 
 st.caption(f"使用モデル: {DEFAULT_MODEL}（事前計算済み / E5 query:/passage: / normalize_embeddings=True） / Model: {DEFAULT_MODEL} (precomputed)")
 # ---- ダウンロードも全件 ----
+def safe_filename(s: str) -> str:
+    s = (s or "").strip()
+    # Windowsで使えない文字を置換
+    return re.sub(r'[\\/:*?"<>|]+', "_", s) or "unknown"
+
+picked_name = safe_filename(str(row.get("name", "")))
+
 csv_bytes = res_show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
 st.download_button(
     "結果（全件）をCSVでダウンロード / Download all results as CSV",
     data=csv_bytes,
-    file_name="match_results_all.csv",
+    file_name=f"match_results_all_{picked_name}.csv",
     mime="text/csv",
 )
 
@@ -737,6 +744,6 @@ json_bytes = res_show.to_json(orient="records", force_ascii=False, indent=2).enc
 st.download_button(
     "結果（全件）をJSONでダウンロード / Download all results as JSON",
     data=json_bytes,
-    file_name="match_results_all.json",
+    file_name=f"match_results_all_{picked_name}.json",
     mime="application/json",
 )
