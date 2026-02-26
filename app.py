@@ -581,9 +581,6 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
-import streamlit as st
-import streamlit.components.v1 as components
-
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
@@ -629,62 +626,6 @@ picked_id = st.selectbox(
 
 # ✅ まだ未選択なら「フォーカスした瞬間に placeholder を消す」
 if picked_id is None:
-    components.html(
-        """
-        <script>
-        (function () {
-          const KEY = "person_selectbox";
-          const PLACEHOLDER = "🔍 名前を入力してください";
-
-          // StreamlitのDOMが描画されてから掴むため、少しだけポーリング
-          const timer = setInterval(() => {
-            const doc = window.parent.document;
-
-            // st.selectbox の input を探す（複数ある場合でも key を手掛かりに近いものを取る）
-            const boxes = Array.from(doc.querySelectorAll('div[data-testid="stSelectbox"]'));
-            if (!boxes.length) return;
-
-            // labelテキストから該当selectboxを特定（「研究者リスト」ラベルの近く）
-            // StreamlitのDOMは変わる可能性があるので、見つからない場合は先頭を使う
-            let target = null;
-            for (const b of boxes) {
-              const label = b.querySelector('label');
-              if (label && label.innerText && label.innerText.includes("研究者リスト")) {
-                target = b;
-                break;
-              }
-            }
-            target = target || boxes[0];
-
-            const input = target.querySelector('input');
-            if (!input) return;
-
-            // 二重登録防止
-            if (input.dataset._bound_clear === "1") {
-              clearInterval(timer);
-              return;
-            }
-            input.dataset._bound_clear = "1";
-
-            // フォーカス or クリックで、placeholder文字列なら消す
-            const clearIfPlaceholder = () => {
-              if (input.value === PLACEHOLDER) {
-                input.value = "";
-                input.dispatchEvent(new Event("input", { bubbles: true }));
-              }
-            };
-            input.addEventListener("focus", clearIfPlaceholder);
-            input.addEventListener("mousedown", clearIfPlaceholder);
-
-            clearInterval(timer);
-          }, 150);
-        })();
-        </script>
-        """,
-        height=0,
-    )
-
-    st.info("名前を入力して研究者を選択してください")
     st.stop()
 
 picked = df[df["id"] == picked_id].iloc[0]
