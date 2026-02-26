@@ -581,6 +581,7 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
+# ---- 見出し ----
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
@@ -595,77 +596,76 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- ふりがな生成（pykakasi）---
-try:
-    from pykakasi import kakasi
-    _kks = kakasi()
-    _kks.setMode("J", "H")
-    _kks.setMode("K", "H")
-    _kks.setMode("H", "H")
-    _conv = _kks.getConverter()
+# ---- ふりがな（漢字→ひらがな） ----
+from pykakasi import kakasi
+_kks = kakasi()
+_kks.setMode("J", "H")
+_kks.setMode("K", "H")
+_kks.setMode("H", "H")
+_conv = _kks.getConverter()
 
-    def to_hira(s: str) -> str:
-        return _conv.do(str(s)).strip().replace(" ", "")
-except Exception:
-    def to_hira(s: str) -> str:
-        return ""
+def to_hira(s: str) -> str:
+    return _conv.do(str(s)).strip().replace(" ", "")
 
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-# ✅ 検索用文字列を options 側に持たせるためのクラス
-class PersonOption:
-    def __init__(self, _id: str, search_text: str, display_text: str):
-        self.id = _id
-        self.search_text = search_text
-        self.display_text = display_text
-
-    # ここが重要：selectboxの検索は str(option) を使う
-    def __str__(self):
-        return self.search_text
-
-opts = []
-for _, r in df.iterrows():
-    _id = str(r["id"])
-    name = str(r.get("name", ""))
-    hira = to_hira(name)
-    aff = str(r.get("affiliation", ""))
-    pos = str(r.get("position", ""))
-    field = str(r.get("research_field", ""))
-    role = role_jp(str(r.get("role_norm", "")))
-
-    # ✅ 検索に引っかかる文字列（ここに ひらがな を入れる）
-    search_text = f"{name} {hira} {aff} {pos} {field} {role}"
-
-    # ✅ 表示（今までのリッチ表示）
-    display_text = (
-        f'👤 {name} ｜ {aff} ｜ {pos} ｜ {field} ｜ 【{role}】'
+def make_label(r) -> str:
+    return (
+        f'👤 {r["name"]} ｜ '
+        f'{r.get("affiliation","")} ｜ '
+        f'{r.get("position","")} ｜ '
+        f'{r.get("research_field","")} ｜ '
+        f'【{role_jp(r.get("role_norm",""))}】'
     )
 
-    opts.append(PersonOption(_id=_id, search_text=search_text, display_text=display_text))
+# ---- ここが重要：一度だけ「ひらがな列」を作る（重いのでキャッシュ） ----
+@st.cache_data(show_spinner=False)
+def build_df_with_hira(df_in: pd.DataFrame) -> pd.DataFrame:
+    df2 = df_in.copy()
+    df2["name_hira"] = df2["name"].astype(str).apply(to_hira)
+    return df2
 
-# ✅ 先頭に None（ダミー）
-options = [None] + opts
+df2 = build_df_with_hira(df)
 
-def format_func(x):
-    if x is None:
-        return "🔍 名前を入力してください（クリックしてから入力）"
-    return x.display_text
-
-picked = st.selectbox(
-    "研究者リスト",
-    options=options,
-    format_func=format_func,
-    index=0,
-    key="person_selectbox",
+# ✅ 検索欄（placeholderなので「入力したら元の文字は必ず消える」）
+q = st.text_input(
+    "",
+    placeholder="🔍 名前を入力してください（例：たなか / 田中）",
+    key="person_query",
 )
 
-if picked is None:
+q = q.strip().replace(" ", "")
+
+# 未入力なら止める（初期に田中が出る問題を回避）
+if not q:
     st.stop()
 
-picked_id = picked.id
-picked_row = df[df["id"] == picked_id].iloc[0]
-picked_role = picked_row["role_norm"]
+# ---- 絞り込み（ひらがな・漢字どちらでもOK） ----
+# 前方一致を優先、次に部分一致を追加（好みで変えられます）
+starts = df2[
+    df2["name"].astype(str).str.startswith(q, na=False)
+    | df2["name_hira"].astype(str).str.startswith(q, na=False)
+]
+contains = df2[
+    df2["name"].astype(str).str.contains(q, na=False)
+    | df2["name_hira"].astype(str).str.contains(q, na=False)
+]
+contains = contains[~contains.index.isin(starts.index)]
+
+cand_df = pd.concat([starts, contains], axis=0)
+
+if cand_df.empty:
+    st.warning("候補がありません（別の入力を試してください）")
+    st.stop()
+
+# ---- 候補をselectboxで表示（見た目はリッチ表示のまま） ----
+cand_labels = cand_df.apply(make_label, axis=1).tolist()
+sel = st.selectbox("候補", cand_labels, index=0, key="person_selectbox_filtered")
+
+picked = cand_df.iloc[cand_labels.index(sel)]
+picked_id = picked["id"]
+picked_role = picked["role_norm"]
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
     query_df = ai_df
