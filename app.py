@@ -581,85 +581,112 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
+import streamlit as st
+import streamlit.components.v1 as components
 
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
 )
 
-def role_jp(role_norm):
+st.markdown(
+    """
+    <style>
+    div[data-baseweb="select"] { width: 100% !important; font-size: 18px; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-def make_label(r):
-    return (
+id_to_label = {
+    r["id"]: (
         f'👤 {r["name"]} ｜ '
         f'{r["affiliation"]} ｜ '
         f'{r["position"]} ｜ '
         f'{r["research_field"]} ｜ '
         f'【{role_jp(r["role_norm"])}】'
     )
+    for _, r in df.iterrows()
+}
 
-# -----------------------
-# 初期値
-# -----------------------
+options = [None] + list(id_to_label.keys())
 
-if "search_text" not in st.session_state:
-    st.session_state.search_text = ""
-
-# -----------------------
-# 入力欄
-# -----------------------
-
-search = st.text_input(
-    "",
-    value=st.session_state.search_text,
-    placeholder="🔍 名前を入力してください",
-    key="search_box"
-)
-
-# 入力内容を保存
-st.session_state.search_text = search
-
-# -----------------------
-# 候補抽出
-# -----------------------
-
-if search:
-
-    cand_df = df[df["name"].str.startswith(search, na=False)]
-
-    if not cand_df.empty:
-
-        labels = cand_df.apply(make_label, axis=1).tolist()
-
-        sel = st.selectbox(
-            "候補",
-            labels,
-            index=0
-        )
-
-        picked = cand_df.iloc[labels.index(sel)]
-        picked_id = picked["id"]
-        picked_role = picked["role_norm"]
-
-    else:
-        st.warning("候補がありません")
-
-else:
-    st.info("名前を入力してください")
+def format_func(_id):
+    if _id is None:
+        return "🔍 名前を入力してください"
+    return id_to_label[_id]
 
 picked_id = st.selectbox(
     "研究者リスト",
     options=options,
     format_func=format_func,
-    index=0,  # ← ここで None が表示される
+    index=0,
+    key="person_selectbox",  # ← 追加（重要）
 )
 
-# まだ選択されていない場合
+# ✅ まだ未選択なら「フォーカスした瞬間に placeholder を消す」
 if picked_id is None:
+    components.html(
+        """
+        <script>
+        (function () {
+          const KEY = "person_selectbox";
+          const PLACEHOLDER = "🔍 名前を入力してください";
+
+          // StreamlitのDOMが描画されてから掴むため、少しだけポーリング
+          const timer = setInterval(() => {
+            const doc = window.parent.document;
+
+            // st.selectbox の input を探す（複数ある場合でも key を手掛かりに近いものを取る）
+            const boxes = Array.from(doc.querySelectorAll('div[data-testid="stSelectbox"]'));
+            if (!boxes.length) return;
+
+            // labelテキストから該当selectboxを特定（「研究者リスト」ラベルの近く）
+            // StreamlitのDOMは変わる可能性があるので、見つからない場合は先頭を使う
+            let target = null;
+            for (const b of boxes) {
+              const label = b.querySelector('label');
+              if (label && label.innerText && label.innerText.includes("研究者リスト")) {
+                target = b;
+                break;
+              }
+            }
+            target = target || boxes[0];
+
+            const input = target.querySelector('input');
+            if (!input) return;
+
+            // 二重登録防止
+            if (input.dataset._bound_clear === "1") {
+              clearInterval(timer);
+              return;
+            }
+            input.dataset._bound_clear = "1";
+
+            // フォーカス or クリックで、placeholder文字列なら消す
+            const clearIfPlaceholder = () => {
+              if (input.value === PLACEHOLDER) {
+                input.value = "";
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+              }
+            };
+            input.addEventListener("focus", clearIfPlaceholder);
+            input.addEventListener("mousedown", clearIfPlaceholder);
+
+            clearInterval(timer);
+          }, 150);
+        })();
+        </script>
+        """,
+        height=0,
+    )
+
+    st.info("名前を入力して研究者を選択してください")
     st.stop()
 
-# 選択後
 picked = df[df["id"] == picked_id].iloc[0]
 picked_role = picked["role_norm"]
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
