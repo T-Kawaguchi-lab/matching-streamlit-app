@@ -595,19 +595,46 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+import streamlit as st
+import streamlit.components.v1 as components
+
+# 追加：ふりがな生成
+try:
+    from pykakasi import kakasi
+    _kks = kakasi()
+    _kks.setMode("J", "H")  # 漢字->ひらがな
+    _kks.setMode("K", "H")  # カタカナ->ひらがな
+    _kks.setMode("H", "H")  # ひらがな->ひらがな
+    _conv = _kks.getConverter()
+
+    def to_hira(s: str) -> str:
+        return _conv.do(str(s)).strip()
+except Exception:
+    # pykakasi が無い/動かない環境でも落ちないように
+    def to_hira(s: str) -> str:
+        return ""
+
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-id_to_label = {
-    r["id"]: (
-        f'👤 {r["name"]} ｜ '
+# id → 表示文字（ここに「ひらがな」も混ぜる）
+id_to_label = {}
+for _, r in df.iterrows():
+    name = str(r["name"])
+    name_hira = to_hira(name)  # 例: 田中 -> たなか
+
+    # ✅ 検索用にひらがなも文字列内へ（見た目を崩したくなければ末尾に小さく付ける）
+    # 例: 👤 田中（たなか）｜ ... ｜【...】
+    label = (
+        f'👤 {name}'
+        + (f'（{name_hira}）' if name_hira else "")
+        + ' ｜ '
         f'{r["affiliation"]} ｜ '
         f'{r["position"]} ｜ '
         f'{r["research_field"]} ｜ '
         f'【{role_jp(r["role_norm"])}】'
     )
-    for _, r in df.iterrows()
-}
+    id_to_label[r["id"]] = label
 
 options = [None] + list(id_to_label.keys())
 
@@ -621,11 +648,11 @@ picked_id = st.selectbox(
     options=options,
     format_func=format_func,
     index=0,
-    key="person_selectbox",  # ← 追加（重要）
+    key="person_selectbox",
 )
 
-# ✅ まだ未選択なら「フォーカスした瞬間に placeholder を消す」
 if picked_id is None:
+    st.info("名前を入力して研究者を選択してください")
     st.stop()
 
 picked = df[df["id"] == picked_id].iloc[0]
