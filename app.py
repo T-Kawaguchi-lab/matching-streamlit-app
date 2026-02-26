@@ -581,12 +581,6 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
-import streamlit as st
-import pandas as pd
-
-# ----------------------------
-# UI 見出し & selectbox の見た目
-# ----------------------------
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
@@ -601,9 +595,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ----------------------------
-# ふりがな（漢字→ひらがな推測）
-# ----------------------------
+# --- ふりがな生成（漢字→ひらがな推測）---
 try:
     from pykakasi import kakasi
     _kks = kakasi()
@@ -615,79 +607,44 @@ try:
     def to_hira(s: str) -> str:
         return _conv.do(str(s)).strip().replace(" ", "")
 except Exception:
-    # pykakasiが無い場合は、ひらがな検索が効かない（落ちないようにする）
+    # pykakasi が無いと ひらがな検索は効きません（落ちないようにはする）
     def to_hira(s: str) -> str:
         return ""
 
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-def make_label(r) -> str:
-    return (
-        f'👤 {r.get("name","")} ｜ '
-        f'{r.get("affiliation","")} ｜ '
-        f'{r.get("position","")} ｜ '
-        f'{r.get("research_field","")} ｜ '
-        f'【{role_jp(r.get("role_norm",""))}】'
-    )
+# ✅ option_key（検索用文字列を含む） -> 表示ラベル（漢字の見た目）
+key_to_label = {}
+key_to_id = {}
 
-# ----------------------------
-# 重い処理はキャッシュ（df → name_hira 付き）
-# ----------------------------
-@st.cache_data(show_spinner=False)
-def build_df2(df_in: pd.DataFrame) -> pd.DataFrame:
-    df2 = df_in.copy()
-    df2["name"] = df2["name"].astype(str)
-    df2["name_hira"] = df2["name"].apply(to_hira)
-    return df2
+for _, r in df.iterrows():
+    _id = str(r["id"])
+    name = str(r.get("name", ""))
+    hira = to_hira(name)
+    aff = str(r.get("affiliation", ""))
+    pos = str(r.get("position", ""))
+    field = str(r.get("research_field", ""))
+    role = role_jp(str(r.get("role_norm", "")))
 
-df2 = build_df2(df)
+    # ★ここが重要：内部検索に引っかかる文字列（ひらがな＋漢字＋id）
+    # 見た目には出さないが、検索には使われる
+    option_key = f"{hira} {name} {_id}"
 
-# id -> 表示ラベル（見た目はあなたの形式のまま）
-id_to_label = {r["id"]: make_label(r) for _, r in df2.iterrows()}
+    # 見せたい表示（あなたの形式のまま）
+    display_label = f'👤 {name} ｜ {aff} ｜ {pos} ｜ {field} ｜ 【{role}】'
 
-# ----------------------------
-# ✅ 1行目：検索入力（ここに「たなか」等を入れる）
-# ----------------------------
-q = st.text_input(
-    "（ここに名前を入力すると候補が絞られます）",
-    value=st.session_state.get("person_query", ""),
-    placeholder="🔍 名前を入力してください（例：たなか / 田中）",
-    key="person_query_input",
-)
-st.session_state["person_query"] = q
+    key_to_label[option_key] = display_label
+    key_to_id[option_key] = _id
 
-q_norm = q.strip().replace(" ", "")
-q_hira = to_hira(q_norm) if q_norm else ""
+options = [None] + list(key_to_label.keys())
 
-# ----------------------------
-# ✅ 2行目：同じ場所にドロップダウン（候補）
-# ----------------------------
-# 未入力なら「全員」ではなく、ダミーだけにして分かりやすく
-if not q_norm:
-    options = [None]
-else:
-    # ひらがな/漢字どちらでもヒット
-    # 前方一致を優先し、次に部分一致を追加（順序が自然）
-    starts = df2[
-        df2["name"].str.startswith(q_norm, na=False)
-        | df2["name_hira"].str.startswith(q_hira, na=False)
-    ]
-    contains = df2[
-        df2["name"].str.contains(q_norm, na=False)
-        | df2["name_hira"].str.contains(q_hira, na=False)
-    ]
-    contains = contains[~contains.index.isin(starts.index)]
-    cand_df = pd.concat([starts, contains], axis=0)
+def format_func(x):
+    if x is None:
+        return "🔍 名前を入力してください（開いてから たなか など入力）"
+    return key_to_label[x]
 
-    options = [None] + cand_df["id"].tolist()
-
-def format_func(_id):
-    if _id is None:
-        return "🔍 候補を選択してください"
-    return id_to_label.get(_id, str(_id))
-
-picked_id = st.selectbox(
+picked_key = st.selectbox(
     "研究者リスト",
     options=options,
     format_func=format_func,
@@ -695,15 +652,12 @@ picked_id = st.selectbox(
     key="person_selectbox",
 )
 
-# ----------------------------
-# 選択後
-# ----------------------------
-if picked_id is None:
+if picked_key is None:
     st.stop()
 
-picked = df2[df2["id"] == picked_id].iloc[0]
+picked_id = key_to_id[picked_key]
+picked = df[df["id"] == picked_id].iloc[0]
 picked_role = picked["role_norm"]
-# picked_id, picked_role をこの後の処理で使う
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
     query_df = ai_df
