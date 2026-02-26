@@ -466,7 +466,7 @@ with st.sidebar:
         uploaded_csv = st.file_uploader("CSVをアップロード（id,url列がある想定） / Upload CSV (expects id,url)", type=["csv"])
 
     st.divider()
-    st.caption(f"使用モデル / Model: {DEFAULT_MODEL}")
+    st.caption(f"使用モデル / Model : {DEFAULT_MODEL}")
 
 
 # ------------------------
@@ -558,7 +558,7 @@ c3.metric("他分野研究者 / Domain", len(other_df))
 
 if len(ai_df) == 0 or len(other_df) == 0:
     st.warning("role分離の結果、片側が0件です。meta.role の値（表記ゆれ）を確認してください。 / After role split, one side is 0. Please check meta.role values (variants).")
-    st.write("role_rawのユニーク（先頭30）:", sorted({str(v) for v in roles_raw if v is not None})[:30])
+    st.write("role_rawのユニーク（先頭30）: ", sorted({str(v) for v in roles_raw if v is not None})[:30])
     st.stop()
 
 
@@ -690,7 +690,7 @@ with col4:
 
 # embed_text
 embed_text = str(row.get("embed_text", ""))  # NaN対策
-st.write("**embed_text 文字数 / length:**", len(embed_text))
+st.write("**embed_text 文字数 / length : **", len(embed_text))
 st.text_area("embed_text（類似度計算に使った全文 / Full text used for similarity）", embed_text, height=250)
 
 # ---- 全件表示（ここから即時）----
@@ -704,8 +704,8 @@ res.insert(1, "similarity", sims[order_idx].astype(float))
 show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matched_url"]
 res_show = res[show_cols].copy()
 
-st.subheader(f"検索結果 / Results list （推薦 / Recommendation:{doc_label})  件数 / Count: {len(res_show)}")
-st.caption(f"表示 / Direction: {query_label} → {doc_label}")
+st.subheader(f"検索結果 / Results list （推薦 / Recommendation : {doc_label})  件数 / Count : {len(res_show)}")
+st.caption(f"表示 / Direction : {query_label} → {doc_label}")
 
 try:
     st.dataframe(
@@ -723,7 +723,7 @@ try:
 except Exception:
     st.dataframe(res_show, use_container_width=True, height=700, hide_index=True)
 
-st.caption(f"使用モデル / Model:{DEFAULT_MODEL}")
+st.caption(f"使用モデル / Model : {DEFAULT_MODEL}")
 # ---- ダウンロードも全件 ----
 def safe_filename(s: str) -> str:
     s = (s or "").strip()
