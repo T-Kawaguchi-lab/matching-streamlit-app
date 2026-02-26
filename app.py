@@ -581,8 +581,6 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
-import streamlit as st
-
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
@@ -600,7 +598,7 @@ st.markdown(
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-# 表示用テキスト（マークダウン風）を id -> label で用意
+# id → 表示文字
 id_to_label = {
     r["id"]: (
         f'👤 {r["name"]} ｜ '
@@ -612,17 +610,30 @@ id_to_label = {
     for _, r in df.iterrows()
 }
 
-# ✅ options は「idのリスト」、表示は format_func でリッチに
+# ✅ 先頭に None を追加
+options = [None] + list(id_to_label.keys())
+
+# 表示用関数
+def format_func(_id):
+    if _id is None:
+        return "🔍 名前を入力してください"
+    return id_to_label[_id]
+
 picked_id = st.selectbox(
-    "研究者リスト（クリック後、そのまま名前を入力すると絞り込まれます）",
-    options=list(id_to_label.keys()),
-    format_func=lambda _id: id_to_label[_id],
-    index=0,
+    "研究者リスト",
+    options=options,
+    format_func=format_func,
+    index=0,  # ← ここで None が表示される
 )
 
+# まだ選択されていない場合
+if picked_id is None:
+    st.info("名前を入力して研究者を選択してください")
+    st.stop()
+
+# 選択後
 picked = df[df["id"] == picked_id].iloc[0]
 picked_role = picked["role_norm"]
-
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
     query_df = ai_df
