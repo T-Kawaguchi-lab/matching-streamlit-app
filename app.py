@@ -200,7 +200,7 @@ ai_df=df[df["role_norm"]=="ai_researcher"].reset_index(drop=True)
 other_df=df[df["role_norm"]=="other_field_researcher"].reset_index(drop=True)
 
 st.write("### 事前計算 / Precompute")
-with st.spinner("計算中 / computing"):
+with st.spinner("計算中（約10分かかります） / computing（It takes about 10 minutes）"):
     mats=precompute_similarity_matrices(DEFAULT_MODEL,ai_df["embed_text"].tolist(),other_df["embed_text"].tolist())
 st.success("完了 / done")
 
