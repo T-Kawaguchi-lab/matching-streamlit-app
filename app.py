@@ -27,7 +27,7 @@ TEXT_KEY_PRIORITY = [
 ]
 
 st.set_page_config(page_title="AI↔他分野 推薦（AI研究者と他分野研究者TRIOSあり） / AI↔Domain Matching (TRIOS available）", layout="wide")
-st.title("AI研究者 ↔ 他分野研究者 推薦（AI研究者と他分野研究者TRIOSあり） / AI↔Domain Researcher Matching (TRIOS available)")
+st.title("AI研究者 ↔ 他分野研究者 推薦 / AI↔Domain Researcher Matching")
 st.caption("E5（query:/passage:）+ normalize_embeddings=True を使用して類似度を計算します。 / Similarity is computed with E5 (query:/passage:) + normalize_embeddings=True.")
 
 APP_DIR = Path(__file__).resolve().parent
@@ -466,7 +466,7 @@ with st.sidebar:
         uploaded_csv = st.file_uploader("CSVをアップロード（id,url列がある想定） / Upload CSV (expects id,url)", type=["csv"])
 
     st.divider()
-    st.caption(f"使用モデル: {DEFAULT_MODEL} / Model: {DEFAULT_MODEL}")
+    st.caption(f"使用モデル / Model: {DEFAULT_MODEL}")
 
 
 # ------------------------
@@ -504,7 +504,7 @@ else:
         map_df = read_csv_from_path(DATA_DIR / selected_csv_name)
         csv_label = selected_csv_name
 
-st.caption(f"データ: JSONL={jsonl_label} / CSV={csv_label} / Data: JSONL={jsonl_label} / CSV={csv_label}")
+st.caption(f"データ / Data : JSONL={jsonl_label} / CSV={csv_label}")
 
 
 # ------------------------
@@ -582,7 +582,7 @@ st.success("事前計算完了 / Precompute finished")
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
 st.markdown(
-    '### 人物を選択 <small>（名前を入力してください / Type a name）</small>',
+    '### 人物を選択 / People search <small>（名前を入力してください / Type a name）</small>',
     unsafe_allow_html=True
 )
 
@@ -653,7 +653,7 @@ else:
 
 # ✅ 以降の表示は「query_df側のrow」で統一（ここが今までの row と同じ役割）
 row = query_df.iloc[sel_idx]
-st.write("##### 入力データ（embed_text） / Input (embed_text)")
+st.write("##### 入力データ / Input（embed_text）")
 
 # 横4列
 col1, col2, col3, col4 = st.columns(4)
@@ -704,7 +704,7 @@ res.insert(1, "similarity", sims[order_idx].astype(float))
 show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matched_url"]
 res_show = res[show_cols].copy()
 
-st.subheader(f"検索結果（推薦:{doc_label}リスト / Results list）  件数 / Count: {len(res_show)}")
+st.subheader(f"検索結果 / Results list （推薦 / Recommendation:{doc_label})  件数 / Count: {len(res_show)}")
 st.caption(f"表示 / Direction: {query_label} → {doc_label}")
 
 try:
@@ -723,7 +723,7 @@ try:
 except Exception:
     st.dataframe(res_show, use_container_width=True, height=700, hide_index=True)
 
-st.caption(f"使用モデル: {DEFAULT_MODEL}（事前計算済み / E5 query:/passage: / normalize_embeddings=True） / Model: {DEFAULT_MODEL} (precomputed)")
+st.caption(f"使用モデル / Model:{DEFAULT_MODEL}")
 # ---- ダウンロードも全件 ----
 def safe_filename(s: str) -> str:
     s = (s or "").strip()
