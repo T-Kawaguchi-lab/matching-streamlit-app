@@ -581,24 +581,12 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
-from pykakasi import kakasi
+import streamlit as st
+import pandas as pd
 
-# ------------------------
-# ひらがな変換
-# ------------------------
-_kks = kakasi()
-_kks.setMode("J", "H")
-_kks.setMode("K", "H")
-_kks.setMode("H", "H")
-_conv = _kks.getConverter()
-
-def to_hira(s):
-    return _conv.do(str(s)).replace(" ", "")
-
-# ------------------------
-# 見出し
-# ------------------------
-
+# ----------------------------
+# UI 見出し & selectbox の見た目
+# ----------------------------
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
@@ -607,132 +595,115 @@ st.markdown(
 st.markdown(
     """
     <style>
-    div[data-baseweb="select"] {
-        width: 100% !important;
-        font-size: 18px;
-    }
+    div[data-baseweb="select"] { width: 100% !important; font-size: 18px; }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# ------------------------
-# label作成
-# ------------------------
+# ----------------------------
+# ふりがな（漢字→ひらがな推測）
+# ----------------------------
+try:
+    from pykakasi import kakasi
+    _kks = kakasi()
+    _kks.setMode("J", "H")
+    _kks.setMode("K", "H")
+    _kks.setMode("H", "H")
+    _conv = _kks.getConverter()
 
-def role_jp(role_norm):
+    def to_hira(s: str) -> str:
+        return _conv.do(str(s)).strip().replace(" ", "")
+except Exception:
+    # pykakasiが無い場合は、ひらがな検索が効かない（落ちないようにする）
+    def to_hira(s: str) -> str:
+        return ""
+
+def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-df["name_hira"] = df["name"].apply(to_hira)
+def make_label(r) -> str:
+    return (
+        f'👤 {r.get("name","")} ｜ '
+        f'{r.get("affiliation","")} ｜ '
+        f'{r.get("position","")} ｜ '
+        f'{r.get("research_field","")} ｜ '
+        f'【{role_jp(r.get("role_norm",""))}】'
+    )
 
-id_to_label = {
-    r["id"]:
-    f'👤 {r["name"]} ｜ '
-    f'{r["affiliation"]} ｜ '
-    f'{r["position"]} ｜ '
-    f'{r["research_field"]} ｜ '
-    f'【{role_jp(r["role_norm"])}】'
-    for _, r in df.iterrows()
-}
+# ----------------------------
+# 重い処理はキャッシュ（df → name_hira 付き）
+# ----------------------------
+@st.cache_data(show_spinner=False)
+def build_df2(df_in: pd.DataFrame) -> pd.DataFrame:
+    df2 = df_in.copy()
+    df2["name"] = df2["name"].astype(str)
+    df2["name_hira"] = df2["name"].apply(to_hira)
+    return df2
 
-# ------------------------
-# selectbox入力内容を取得
-# ------------------------
+df2 = build_df2(df)
 
-# session_state 初期化
-if "person_selectbox" not in st.session_state:
-    st.session_state.person_selectbox = None
+# id -> 表示ラベル（見た目はあなたの形式のまま）
+id_to_label = {r["id"]: make_label(r) for _, r in df2.iterrows()}
 
-search_text = ""
+# ----------------------------
+# ✅ 1行目：検索入力（ここに「たなか」等を入れる）
+# ----------------------------
+q = st.text_input(
+    "（ここに名前を入力すると候補が絞られます）",
+    value=st.session_state.get("person_query", ""),
+    placeholder="🔍 名前を入力してください（例：たなか / 田中）",
+    key="person_query_input",
+)
+st.session_state["person_query"] = q
 
-# selectboxの入力テキスト取得（JS不要）
-if "_selectbox_search" not in st.session_state:
-    st.session_state._selectbox_search = ""
+q_norm = q.strip().replace(" ", "")
+q_hira = to_hira(q_norm) if q_norm else ""
 
-# ------------------------
-# 検索フィルタ
-# ------------------------
-
-if st.session_state.person_selectbox is None:
-
-    options = [None] + list(id_to_label.keys())
-
+# ----------------------------
+# ✅ 2行目：同じ場所にドロップダウン（候補）
+# ----------------------------
+# 未入力なら「全員」ではなく、ダミーだけにして分かりやすく
+if not q_norm:
+    options = [None]
 else:
+    # ひらがな/漢字どちらでもヒット
+    # 前方一致を優先し、次に部分一致を追加（順序が自然）
+    starts = df2[
+        df2["name"].str.startswith(q_norm, na=False)
+        | df2["name_hira"].str.startswith(q_hira, na=False)
+    ]
+    contains = df2[
+        df2["name"].str.contains(q_norm, na=False)
+        | df2["name_hira"].str.contains(q_hira, na=False)
+    ]
+    contains = contains[~contains.index.isin(starts.index)]
+    cand_df = pd.concat([starts, contains], axis=0)
 
-    options = [None] + list(id_to_label.keys())
+    options = [None] + cand_df["id"].tolist()
 
-
-# ------------------------
-# selectbox
-# ------------------------
+def format_func(_id):
+    if _id is None:
+        return "🔍 候補を選択してください"
+    return id_to_label.get(_id, str(_id))
 
 picked_id = st.selectbox(
     "研究者リスト",
     options=options,
-    format_func=lambda x:
-        "🔍 名前を入力してください"
-        if x is None else id_to_label[x],
+    format_func=format_func,
+    index=0,
     key="person_selectbox",
 )
 
-# ------------------------
-# ここが追加：入力文字でフィルタ
-# ------------------------
-
-# selectboxのDOM入力値をJSで取得
-components.html(
-    """
-<script>
-const input = window.parent.document.querySelector(
-'div[data-baseweb="select"] input');
-
-if(input){
-input.oninput = function(){
-window.parent.postMessage({
-type: "streamlit:setComponentValue",
-value: input.value
-},"*");
-}
-}
-</script>
-""",
-    height=0,
-)
-
-# ------------------------
-# Python側フィルタ
-# ------------------------
-
-query = st.session_state.get("_component_value", "")
-
-if query:
-
-    query_hira = to_hira(query)
-
-    filtered = df[
-        df["name"].str.contains(query, na=False)
-        | df["name_hira"].str.contains(query_hira, na=False)
-    ]
-
-    options = [None] + filtered["id"].tolist()
-
-    picked_id = st.selectbox(
-        "研究者リスト",
-        options=options,
-        format_func=lambda x:
-            "🔍 名前を入力してください"
-            if x is None else id_to_label[x],
-        key="person_selectbox_filtered",
-    )
-
-# ------------------------
+# ----------------------------
 # 選択後
-# ------------------------
+# ----------------------------
+if picked_id is None:
+    st.stop()
 
-if picked_id is not None:
-
-    picked = df[df["id"] == picked_id].iloc[0]
-    picked_role = picked["role_norm"]
+picked = df2[df2["id"] == picked_id].iloc[0]
+picked_role = picked["role_norm"]
+# picked_id, picked_role をこの後の処理で使う
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
     query_df = ai_df
