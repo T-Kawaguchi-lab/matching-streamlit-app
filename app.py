@@ -619,7 +619,7 @@ def format_func(_id):
     return id_to_label[_id]
 
 picked_id = st.selectbox(
-    "研究者リスト※「🔍(名前入力 / Type name)」は消して入力してください / Researcher list: delete the ”🔍(名前入力 / Type name)” and type to search",
+    "研究者リスト / Researcher list ※「🔍(名前入力 / Type name)」は消して入力してください / delete the ”🔍(名前入力 / Type name)” and type to search",
     options=options,
     format_func=format_func,
     index=0,
