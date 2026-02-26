@@ -690,7 +690,7 @@ with col4:
 
 # embed_text
 embed_text = str(row.get("embed_text", ""))  # NaN対策
-st.write("**embed_text 文字数 / length : **", len(embed_text))
+st.write("**embed_text 文字数 / length :**", len(embed_text))
 st.text_area("embed_text（類似度計算に使った全文 / Full text used for similarity）", embed_text, height=250)
 
 # ---- 全件表示（ここから即時）----
@@ -704,7 +704,7 @@ res.insert(1, "similarity", sims[order_idx].astype(float))
 show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matched_url"]
 res_show = res[show_cols].copy()
 
-st.subheader(f"検索結果 / Results list （推薦 / Recommendation : {doc_label})  件数 / Count : {len(res_show)}")
+st.subheader(f"検索結果 / Results list （推薦 / Recommendation : {doc_label})   件数 / Count : {len(res_show)}")
 st.caption(f"表示 / Direction : {query_label} → {doc_label}")
 
 try:
