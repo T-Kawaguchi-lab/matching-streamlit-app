@@ -581,7 +581,24 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
-# ---- 見出し ----
+from pykakasi import kakasi
+
+# ------------------------
+# ひらがな変換
+# ------------------------
+_kks = kakasi()
+_kks.setMode("J", "H")
+_kks.setMode("K", "H")
+_kks.setMode("H", "H")
+_conv = _kks.getConverter()
+
+def to_hira(s):
+    return _conv.do(str(s)).replace(" ", "")
+
+# ------------------------
+# 見出し
+# ------------------------
+
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
@@ -590,82 +607,132 @@ st.markdown(
 st.markdown(
     """
     <style>
-    div[data-baseweb="select"] { width: 100% !important; font-size: 18px; }
+    div[data-baseweb="select"] {
+        width: 100% !important;
+        font-size: 18px;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# ---- ふりがな（漢字→ひらがな） ----
-from pykakasi import kakasi
-_kks = kakasi()
-_kks.setMode("J", "H")
-_kks.setMode("K", "H")
-_kks.setMode("H", "H")
-_conv = _kks.getConverter()
+# ------------------------
+# label作成
+# ------------------------
 
-def to_hira(s: str) -> str:
-    return _conv.do(str(s)).strip().replace(" ", "")
-
-def role_jp(role_norm: str) -> str:
+def role_jp(role_norm):
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-def make_label(r) -> str:
-    return (
-        f'👤 {r["name"]} ｜ '
-        f'{r.get("affiliation","")} ｜ '
-        f'{r.get("position","")} ｜ '
-        f'{r.get("research_field","")} ｜ '
-        f'【{role_jp(r.get("role_norm",""))}】'
-    )
+df["name_hira"] = df["name"].apply(to_hira)
 
-# ---- ここが重要：一度だけ「ひらがな列」を作る（重いのでキャッシュ） ----
-@st.cache_data(show_spinner=False)
-def build_df_with_hira(df_in: pd.DataFrame) -> pd.DataFrame:
-    df2 = df_in.copy()
-    df2["name_hira"] = df2["name"].astype(str).apply(to_hira)
-    return df2
+id_to_label = {
+    r["id"]:
+    f'👤 {r["name"]} ｜ '
+    f'{r["affiliation"]} ｜ '
+    f'{r["position"]} ｜ '
+    f'{r["research_field"]} ｜ '
+    f'【{role_jp(r["role_norm"])}】'
+    for _, r in df.iterrows()
+}
 
-df2 = build_df_with_hira(df)
+# ------------------------
+# selectbox入力内容を取得
+# ------------------------
 
-# ✅ 検索欄（placeholderなので「入力したら元の文字は必ず消える」）
-q = st.text_input(
-    "",
-    placeholder="🔍 名前を入力してください（例：たなか / 田中）",
-    key="person_query",
+# session_state 初期化
+if "person_selectbox" not in st.session_state:
+    st.session_state.person_selectbox = None
+
+search_text = ""
+
+# selectboxの入力テキスト取得（JS不要）
+if "_selectbox_search" not in st.session_state:
+    st.session_state._selectbox_search = ""
+
+# ------------------------
+# 検索フィルタ
+# ------------------------
+
+if st.session_state.person_selectbox is None:
+
+    options = [None] + list(id_to_label.keys())
+
+else:
+
+    options = [None] + list(id_to_label.keys())
+
+
+# ------------------------
+# selectbox
+# ------------------------
+
+picked_id = st.selectbox(
+    "研究者リスト",
+    options=options,
+    format_func=lambda x:
+        "🔍 名前を入力してください"
+        if x is None else id_to_label[x],
+    key="person_selectbox",
 )
 
-q = q.strip().replace(" ", "")
+# ------------------------
+# ここが追加：入力文字でフィルタ
+# ------------------------
 
-# 未入力なら止める（初期に田中が出る問題を回避）
-if not q:
-    st.stop()
+# selectboxのDOM入力値をJSで取得
+components.html(
+    """
+<script>
+const input = window.parent.document.querySelector(
+'div[data-baseweb="select"] input');
 
-# ---- 絞り込み（ひらがな・漢字どちらでもOK） ----
-# 前方一致を優先、次に部分一致を追加（好みで変えられます）
-starts = df2[
-    df2["name"].astype(str).str.startswith(q, na=False)
-    | df2["name_hira"].astype(str).str.startswith(q, na=False)
-]
-contains = df2[
-    df2["name"].astype(str).str.contains(q, na=False)
-    | df2["name_hira"].astype(str).str.contains(q, na=False)
-]
-contains = contains[~contains.index.isin(starts.index)]
+if(input){
+input.oninput = function(){
+window.parent.postMessage({
+type: "streamlit:setComponentValue",
+value: input.value
+},"*");
+}
+}
+</script>
+""",
+    height=0,
+)
 
-cand_df = pd.concat([starts, contains], axis=0)
+# ------------------------
+# Python側フィルタ
+# ------------------------
 
-if cand_df.empty:
-    st.warning("候補がありません（別の入力を試してください）")
-    st.stop()
+query = st.session_state.get("_component_value", "")
 
-# ---- 候補をselectboxで表示（見た目はリッチ表示のまま） ----
-cand_labels = cand_df.apply(make_label, axis=1).tolist()
-sel = st.selectbox("候補", cand_labels, index=0, key="person_selectbox_filtered")
+if query:
 
-picked = cand_df.iloc[cand_labels.index(sel)]
-picked_id = picked["id"]
-picked_role = picked["role_norm"]
+    query_hira = to_hira(query)
+
+    filtered = df[
+        df["name"].str.contains(query, na=False)
+        | df["name_hira"].str.contains(query_hira, na=False)
+    ]
+
+    options = [None] + filtered["id"].tolist()
+
+    picked_id = st.selectbox(
+        "研究者リスト",
+        options=options,
+        format_func=lambda x:
+            "🔍 名前を入力してください"
+            if x is None else id_to_label[x],
+        key="person_selectbox_filtered",
+    )
+
+# ------------------------
+# 選択後
+# ------------------------
+
+if picked_id is not None:
+
+    picked = df[df["id"] == picked_id].iloc[0]
+    picked_role = picked["role_norm"]
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
     query_df = ai_df
