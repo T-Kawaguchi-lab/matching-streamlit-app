@@ -595,10 +595,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-import streamlit as st
-import streamlit.components.v1 as components
-
-# 追加：ふりがな生成
+# --- ふりがな生成（pykakasi）---
 try:
     from pykakasi import kakasi
     _kks = kakasi()
@@ -610,37 +607,36 @@ try:
     def to_hira(s: str) -> str:
         return _conv.do(str(s)).strip()
 except Exception:
-    # pykakasi が無い/動かない環境でも落ちないように
     def to_hira(s: str) -> str:
         return ""
 
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-# id → 表示文字（ここに「ひらがな」も混ぜる）
+# ✅ id → 表示文字
+# 重要：検索が前方一致でもヒットするように、先頭に「ひらがな」を置く
 id_to_label = {}
 for _, r in df.iterrows():
-    name = str(r["name"])
-    name_hira = to_hira(name)  # 例: 田中 -> たなか
+    name = str(r.get("name", ""))
+    hira = to_hira(name)
+    hira = hira.replace(" ", "")  # 念のため
 
-    # ✅ 検索用にひらがなも文字列内へ（見た目を崩したくなければ末尾に小さく付ける）
-    # 例: 👤 田中（たなか）｜ ... ｜【...】
     label = (
-        f'👤 {name}'
-        + (f'（{name_hira}）' if name_hira else "")
-        + ' ｜ '
-        f'{r["affiliation"]} ｜ '
-        f'{r["position"]} ｜ '
-        f'{r["research_field"]} ｜ '
-        f'【{role_jp(r["role_norm"])}】'
+        f'{hira} ｜ '              # ← ここがポイント（先頭）
+        f'👤 {name} ｜ '
+        f'{r.get("affiliation","")} ｜ '
+        f'{r.get("position","")} ｜ '
+        f'{r.get("research_field","")} ｜ '
+        f'【{role_jp(r.get("role_norm",""))}】'
     )
     id_to_label[r["id"]] = label
 
+# ✅ 先頭に None（ダミー）
 options = [None] + list(id_to_label.keys())
 
 def format_func(_id):
     if _id is None:
-        return "🔍 名前を入力してください"
+        return "🔍 名前を入力してください（クリックしてから入力）"
     return id_to_label[_id]
 
 picked_id = st.selectbox(
@@ -652,7 +648,6 @@ picked_id = st.selectbox(
 )
 
 if picked_id is None:
-    st.info("名前を入力して研究者を選択してください")
     st.stop()
 
 picked = df[df["id"] == picked_id].iloc[0]
