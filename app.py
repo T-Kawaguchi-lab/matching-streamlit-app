@@ -581,6 +581,9 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
+import streamlit as st
+import pandas as pd
+
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
@@ -595,7 +598,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- ふりがな生成（漢字→ひらがな推測）---
+# --- ふりがな（漢字→ひらがな推測）---
 try:
     from pykakasi import kakasi
     _kks = kakasi()
@@ -607,56 +610,84 @@ try:
     def to_hira(s: str) -> str:
         return _conv.do(str(s)).strip().replace(" ", "")
 except Exception:
-    # pykakasi が無いと ひらがな検索は効きません（落ちないようにはする）
     def to_hira(s: str) -> str:
         return ""
 
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-# ✅ option_key（検索用文字列を含む） -> 表示ラベル（漢字の見た目）
-key_to_label = {}
-key_to_id = {}
+def make_label(r) -> str:
+    return (
+        f'👤 {r.get("name","")} ｜ '
+        f'{r.get("affiliation","")} ｜ '
+        f'{r.get("position","")} ｜ '
+        f'{r.get("research_field","")} ｜ '
+        f'【{role_jp(r.get("role_norm",""))}】'
+    )
 
-for _, r in df.iterrows():
-    _id = str(r["id"])
-    name = str(r.get("name", ""))
-    hira = to_hira(name)
-    aff = str(r.get("affiliation", ""))
-    pos = str(r.get("position", ""))
-    field = str(r.get("research_field", ""))
-    role = role_jp(str(r.get("role_norm", "")))
+@st.cache_data(show_spinner=False)
+def build_df2(df_in: pd.DataFrame) -> pd.DataFrame:
+    df2 = df_in.copy()
+    df2["name"] = df2["name"].astype(str)
+    df2["name_hira"] = df2["name"].apply(to_hira)
+    return df2
 
-    # ★ここが重要：内部検索に引っかかる文字列（ひらがな＋漢字＋id）
-    # 見た目には出さないが、検索には使われる
-    option_key = f"{hira} {name} {_id}"
+df2 = build_df2(df)
 
-    # 見せたい表示（あなたの形式のまま）
-    display_label = f'👤 {name} ｜ {aff} ｜ {pos} ｜ {field} ｜ 【{role}】'
+id_to_label = {r["id"]: make_label(r) for _, r in df2.iterrows()}
 
-    key_to_label[option_key] = display_label
-    key_to_id[option_key] = _id
+# ✅ 同じ行に「入力欄」と「候補ドロップダウン」
+c1, c2 = st.columns([1, 3], vertical_alignment="center")
 
-options = [None] + list(key_to_label.keys())
+with c1:
+    q = st.text_input(
+        "検索",
+        value=st.session_state.get("person_query", ""),
+        placeholder="たなか / 田中",
+        key="person_query",
+        label_visibility="collapsed",
+    )
 
-def format_func(x):
-    if x is None:
-        return "🔍 名前を入力してください（開いてから たなか など入力）"
-    return key_to_label[x]
+q_norm = q.strip().replace(" ", "")
+q_hira = to_hira(q_norm) if q_norm else ""
 
-picked_key = st.selectbox(
-    "研究者リスト",
-    options=options,
-    format_func=format_func,
-    index=0,
-    key="person_selectbox",
-)
+# 入力中は即フィルタ（Enter不要）
+if q_norm:
+    starts = df2[
+        df2["name"].str.startswith(q_norm, na=False)
+        | df2["name_hira"].str.startswith(q_hira, na=False)
+    ]
+    contains = df2[
+        df2["name"].str.contains(q_norm, na=False)
+        | df2["name_hira"].str.contains(q_hira, na=False)
+    ]
+    contains = contains[~contains.index.isin(starts.index)]
+    cand_df = pd.concat([starts, contains], axis=0)
+else:
+    # 未入力時は選ばせない（ダミーだけ）
+    cand_df = df2.iloc[0:0]  # empty
 
-if picked_key is None:
+with c2:
+    options = [None] + cand_df["id"].tolist()
+
+    def fmt(_id):
+        if _id is None:
+            return "🔍 名前を入力してください"
+        return id_to_label[_id]
+
+    picked_id = st.selectbox(
+        "研究者リスト",
+        options=options,
+        format_func=fmt,
+        index=0,
+        key="person_selectbox",
+        label_visibility="collapsed",
+    )
+
+if picked_id is None:
     st.stop()
 
-picked_id = key_to_id[picked_key]
-picked = df[df["id"] == picked_id].iloc[0]
+picked = df2[df2["id"] == picked_id].iloc[0]
 picked_role = picked["role_norm"]
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
