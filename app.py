@@ -704,7 +704,7 @@ res.insert(1, "similarity", sims[order_idx].astype(float))
 show_cols = ["rank", "similarity", "id", "name", "affiliation", "position", "research_field", "summary", "url", "matched_url"]
 res_show = res[show_cols].copy()
 
-st.subheader(f"検索結果 / Results list （推薦 / Recommendation : {doc_label})   件数 / Count : {len(res_show)}")
+st.subheader(f"検索結果 / Results list （推薦 / Recommendation : {doc_label})　　件数 / Count : {len(res_show)}")
 st.caption(f"表示 / Direction : {query_label} → {doc_label}")
 
 try:
