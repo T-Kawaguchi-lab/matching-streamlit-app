@@ -581,20 +581,17 @@ st.success("事前計算完了")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
-# ✅ 人物選択（全員）
+import streamlit as st
+
 st.markdown(
     '### 人物を選択 <small>（検索したい人物を選んでください）</small>',
     unsafe_allow_html=True
 )
 
-# selectbox の見た目（幅・文字サイズ）
 st.markdown(
     """
     <style>
-    div[data-baseweb="select"] {
-        width: 100% !important;
-        font-size: 18px;
-    }
+    div[data-baseweb="select"] { width: 100% !important; font-size: 18px; }
     </style>
     """,
     unsafe_allow_html=True
@@ -603,72 +600,28 @@ st.markdown(
 def role_jp(role_norm: str) -> str:
     return "AI研究者" if role_norm == "ai_researcher" else "他分野研究者"
 
-def make_label(r) -> str:
-    return (
+# 表示用テキスト（マークダウン風）を id -> label で用意
+id_to_label = {
+    r["id"]: (
         f'👤 {r["name"]} ｜ '
         f'{r["affiliation"]} ｜ '
         f'{r["position"]} ｜ '
         f'{r["research_field"]} ｜ '
         f'【{role_jp(r["role_norm"])}】'
     )
+    for _, r in df.iterrows()
+}
 
-# ---------------------------
-# ✅ 1) 名前検索（入力欄）
-# ---------------------------
-q = st.text_input(
-    "名前で検索（例：田中）",
-    value=st.session_state.get("person_query", ""),
-    placeholder="名字 or 名前を入力…（入力中、候補が下に出ます）"
+# ✅ options は「idのリスト」、表示は format_func でリッチに
+picked_id = st.selectbox(
+    "研究者リスト（クリック後、そのまま名前を入力すると絞り込まれます）",
+    options=list(id_to_label.keys()),
+    format_func=lambda _id: id_to_label[_id],
+    index=0,
 )
-st.session_state["person_query"] = q
 
-q_norm = q.strip()
-
-# ---------------------------
-# ✅ 2) 入力中は候補を絞る
-#   - 「田中」→「田中」で始まる人が優先で出る
-#   - ついでに「含む」も後ろに出す（必要なければ消してOK）
-# ---------------------------
-df_ = df.copy()
-
-if q_norm:
-    # startswith（前方一致）
-    starts = df_[df_["name"].astype(str).str.startswith(q_norm, na=False)]
-    # contains（部分一致）: starts と重複しないものだけ後ろに足す
-    contains = df_[df_["name"].astype(str).str.contains(q_norm, na=False)]
-    contains = contains[~contains.index.isin(starts.index)]
-    cand_df = pd.concat([starts, contains], axis=0)
-else:
-    cand_df = df_
-
-# 候補0件のとき
-if cand_df.empty:
-    st.warning("該当する候補が見つかりませんでした。別のキーワードで検索してください。")
-    st.stop()
-
-# ---------------------------
-# ✅ 3) 候補リスト（候補が下に出る）
-# ---------------------------
-cand_labels = cand_df.apply(make_label, axis=1).tolist()
-
-# 直前に選んだ人が候補内にいるなら、それを初期選択にする
-prev_id = st.session_state.get("picked_id", None)
-if prev_id is not None and "id" in cand_df.columns:
-    # cand_df の中で prev_id がある index を探す
-    hit = cand_df.index[cand_df["id"] == prev_id].tolist()
-    default_idx = 0 if len(hit) == 0 else cand_df.index.get_loc(hit[0])
-else:
-    default_idx = 0
-
-sel = st.selectbox("候補（クリックして選択）", cand_labels, index=default_idx)
-
-# sel から選ばれた行を取得（cand_df 側の位置でOK）
-sel_idx = cand_labels.index(sel)
-picked = cand_df.iloc[sel_idx]
-
-picked_id = picked["id"]
+picked = df[df["id"] == picked_id].iloc[0]
 picked_role = picked["role_norm"]
-st.session_state["picked_id"] = picked_id  # 次回の初期選択に使う
 
 # ✅ 選んだ人が AI なら「他分野」を表示、他分野なら「AI」を表示
 if picked_role == "ai_researcher":
