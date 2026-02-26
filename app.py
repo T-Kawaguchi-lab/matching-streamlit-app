@@ -615,11 +615,11 @@ options = [None] + list(id_to_label.keys())
 
 def format_func(_id):
     if _id is None:
-        return "🔍(検索)"
+        return "🔍(名前入力)"
     return id_to_label[_id]
 
 picked_id = st.selectbox(
-    "研究者リスト",
+    "研究者リスト※🔍(名前入力)は消して入力してください",
     options=options,
     format_func=format_func,
     index=0,
