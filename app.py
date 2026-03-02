@@ -211,9 +211,10 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
 
     #（両roleで共通）
     masters_thesis_titles = [
-    strip_outer_parens(x)
-    for x in (get_nested(r, "meta.masters_thesis_titles"))]
-    masters_thesis_titles = [x for x in masters_thesis_titles if x]  # 空除外
+        strip_outer_parens(x)
+        for x in (get_nested(r, "meta.masters_thesis_titles") or [])
+        if str(x).strip()
+    ]
     trios_topics = _as_list(get_nested(r, "trios.research_topics"))
     trios_papers = _as_list(get_nested(r, "trios.papers"))
 
@@ -556,7 +557,14 @@ for i, r in enumerate(rows, start=1):
     # ✅ 新JSONLの主要情報も含めて埋め込みテキストを作る（重要）
     embed_text = build_embedding_text_selected_fields(r)
     matched_url = (get_nested(r, "trios.matched_url") or "").strip()
+    masters_thesis_titles = get_nested(r, "meta.masters_thesis_titles") or []
 
+    # 外側カッコ除去（任意）
+    masters_thesis_titles = [
+        strip_outer_parens(x)
+        for x in masters_thesis_titles
+        if str(x).strip()
+    ]
     records.append({
         "id": rid,
         "role_norm": role_n,
@@ -567,6 +575,7 @@ for i, r in enumerate(rows, start=1):
         "summary": summarize_one_line(r),
         "embed_text": embed_text,
         "matched_url": matched_url,
+        "masters_thesis_titles": masters_thesis_titles,
         # 参考: ここに追加情報を保持（UIは変えないので表示列には使わない）
         "role_raw": "" if role_raw is None else str(role_raw),
     })
@@ -718,8 +727,7 @@ with col4:
     else:
         st.markdown("**TRIOS URL**<br>なし / None", unsafe_allow_html=True)
 
-theses_raw = row.get("masters_thesis_titles", []) or []
-theses = [strip_outer_parens(x) for x in theses_raw if str(x).strip()]
+theses = row.get("masters_thesis_titles", [])
 
 st.markdown(
     "**担当修論 / supervised master's theses**<br>"
