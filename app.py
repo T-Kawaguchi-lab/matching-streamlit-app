@@ -180,6 +180,23 @@ def _join(xs, sep=", "):
     xs = [str(x).strip() for x in xs if str(x).strip()]
     return sep.join(xs)
 
+import re
+
+def strip_outer_parens(s: str) -> str:
+    if s is None:
+        return ""
+    t = str(s).strip()
+
+    # 全角（ ）も半角( )も対応
+    pairs = [("(", ")"), ("（", "）")]
+
+    for l, r in pairs:
+        if t.startswith(l) and t.endswith(r) and len(t) >= 2:
+            t = t[1:-1].strip()
+            break
+
+    # 念のため、外側にカッコが複数重なってたら1回だけ外す仕様（必要なら while に変更OK）
+    return t
 
 def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
     """
@@ -193,7 +210,10 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
     research_field = (get_nested(r, "meta.research_field") or r.get("research_field") or "").strip()
 
     #（両roleで共通）
-    masters_thesis_titles = (get_nested(r, "meta.masters_thesis_titles"))
+    masters_thesis_titles = [
+    strip_outer_parens(x)
+    for x in (get_nested(r, "meta.masters_thesis_titles"))]
+    masters_thesis_titles = [x for x in masters_thesis_titles if x]  # 空除外
     trios_topics = _as_list(get_nested(r, "trios.research_topics"))
     trios_papers = _as_list(get_nested(r, "trios.papers"))
 
@@ -698,9 +718,12 @@ with col4:
     else:
         st.markdown("**TRIOS URL**<br>なし / None", unsafe_allow_html=True)
 
+theses_raw = row.get("masters_thesis_titles", []) or []
+theses = [strip_outer_parens(x) for x in theses_raw if str(x).strip()]
+
 st.markdown(
-    f"**担当修論 / supervised master's theses**<br>"
-    f"{'<br>'.join(get_nested(row, 'meta.masters_thesis_titles'))}",
+    "**担当修論 / supervised master's theses**<br>"
+    + ("<br>".join(f"・{t}" for t in theses) if theses else "なし / None"),
     unsafe_allow_html=True
 )
 # embed_text
