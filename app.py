@@ -192,7 +192,8 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
 
     research_field = (get_nested(r, "meta.research_field") or r.get("research_field") or "").strip()
 
-    # TRIOS（両roleで共通）
+    #（両roleで共通）
+    masters_thesis_titles = _as_list(get_nested(r, "meta.masters_thesis_titles"))
     trios_topics = _as_list(get_nested(r, "trios.research_topics"))
     trios_papers = _as_list(get_nested(r, "trios.papers"))
 
@@ -261,6 +262,8 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
             ja.append(f"研究トピックは{_join(trios_topics, sep='、')}です。")
         if trios_papers:
             ja.append(f"関連論文は{_join(trios_papers, sep='、')}です。")
+        if masters_thesis_titles:
+            ja.append(f"担当した修論テーマは{_join(masters_thesis_titles, sep='、')}です。")
 
         ja_text = " ".join(ja).strip()
 
@@ -295,6 +298,9 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
             en.append(f"Research topics include {_join(trios_topics)}.")
         if trios_papers:
             en.append(f"Related papers include {_join(trios_papers)}.")
+        if masters_thesis_titles:
+            en.append(f"My supervised master’s thesis topics are {_join(masters_thesis_titles)}.")
+
 
         en_text = " ".join(en).strip()
 
@@ -329,6 +335,8 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
         ja.append(f"研究トピックは{_join(trios_topics, sep='、')}です。")
     if trios_papers:
         ja.append(f"関連論文は{_join(trios_papers, sep='、')}です。")
+    if masters_thesis_titles:
+            ja.append(f"担当した修論テーマは{_join(masters_thesis_titles, sep='、')}です。")
     ja_text = " ".join(ja).strip()
 
     # 英語文
@@ -345,6 +353,8 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
         en.append(f"Research topics include {_join(trios_topics)}.")
     if trios_papers:
         en.append(f"Related papers include {_join(trios_papers)}.")
+    if masters_thesis_titles:
+        en.append(f"My supervised master’s thesis topics are {_join(masters_thesis_titles)}.")
     en_text = " ".join(en).strip()
 
     # 両方入れる（空は除外）
@@ -688,6 +698,11 @@ with col4:
     else:
         st.markdown("**TRIOS URL**<br>なし / None", unsafe_allow_html=True)
 
+st.markdown(
+    f"**担当修論 / supervised master's theses**<br>"
+    f"{'<br>'.join(_as_list(get_nested(row, 'meta.masters_thesis_titles')))}",
+    unsafe_allow_html=True
+)
 # embed_text
 embed_text = str(row.get("embed_text", ""))  # NaN対策
 st.write("**embed_text 文字数 / length :**", len(embed_text))
