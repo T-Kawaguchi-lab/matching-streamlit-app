@@ -700,7 +700,7 @@ with col4:
 
 st.markdown(
     f"**担当修論 / supervised master's theses**<br>"
-    f"{'<br>'.join(_as_list(get_nested(row, 'meta.masters_thesis_titles')))}",
+    f"{'<br>'.join(get_nested(row, 'meta.masters_thesis_titles'))}",
     unsafe_allow_html=True
 )
 # embed_text
