@@ -193,7 +193,7 @@ def build_embedding_text_selected_fields(r: Dict[str, Any]) -> str:
     research_field = (get_nested(r, "meta.research_field") or r.get("research_field") or "").strip()
 
     #（両roleで共通）
-    masters_thesis_titles = _as_list(get_nested(r, "meta.masters_thesis_titles"))
+    masters_thesis_titles = (get_nested(r, "meta.masters_thesis_titles"))
     trios_topics = _as_list(get_nested(r, "trios.research_topics"))
     trios_papers = _as_list(get_nested(r, "trios.papers"))
 
