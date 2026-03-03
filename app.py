@@ -589,7 +589,24 @@ else:
 
 ai_df = df[df["role_norm"] == "ai_researcher"].reset_index(drop=True)
 other_df = df[df["role_norm"] == "other_field_researcher"].reset_index(drop=True)
+st.markdown("""
+### 🔎 研究者区分の定義 / Definition of Researcher Categories
 
+**AI研究者 / AI Researcher**
+
+AI for Science「チャレンジ型」公募に向けたアンケート調査  
+項目２：研究へのAIの活用経験と意識 において  
+「AIそのものやAIの高度化を研究している」  
+(I conduct research on AI itself or on the advancement of AI technologies.)  
+を選択した方
+
+---
+
+**他分野研究者 / Domain Researcher**
+
+上記以外の選択肢を選んだ方  
+(Those who selected any other option.)
+""")
 c1, c2, c3 = st.columns(3)
 c1.metric("総件数 / Total", len(df))
 c2.metric("AI研究者 / AI", len(ai_df))
@@ -605,6 +622,18 @@ if len(ai_df) == 0 or len(other_df) == 0:
 # Precompute (HEAVY) ONCE
 # ------------------------
 st.write("### 事前計算 / Precompute")
+st.markdown("""
+### 入力データ一覧 / Input Data List
+
+- アンケート結果  / Questionnaire results  
+- TRIOS  
+- 2025年度修論タイトル及び指導教員リスト  
+    - サービス工学学位プログラム / Master’s Program in Service Engineering  
+    - 社会工学学位プログラム / Master’s Program in Policy and Planning Sciences  
+    - 知能機能システム学位プログラム / Master’s/Doctoral Program in Intelligent and Mechanical Interaction Systems  
+    - リスク・レジリエンス工学学位プログラム / Master’s/Doctoral Program in Risk and Resilience Engineering  
+    - 情報理工学位プログラム / Master’s/Doctoral Program in Computer Science  
+""")
 st.caption("初回だけ全員分の埋め込みと類似度行列を作ります。以降は人物を選ぶだけで即表示されます。 / First time only: compute embeddings and similarity matrices for everyone. After that, selecting a person is instant.")
 
 with st.spinner("全員分の類似度を事前計算しています。（初回のみとても重いです）10分程度かかります。... / Precomputing similarity (very heavy only on first run; may take ~10 minutes)..."):
@@ -690,22 +719,33 @@ else:
     # other_df の中での index を特定
     sel_idx = int(other_df.index[other_df["id"] == picked_id][0])
 
-# ✅ 以降の表示は「query_df側のrow」で統一（ここが今までの row と同じ役割）
+# ==============================
+# 入力データ枠スタート
+# ==============================
+
+st.markdown("""
+<div style="
+    border: 2px solid #4A90E2;
+    border-radius: 12px;
+    padding: 20px;
+    background-color: #F8FAFF;
+    margin-bottom: 20px;
+">
+""", unsafe_allow_html=True)
+
 row = query_df.iloc[sel_idx]
-st.write("##### 入力データ / Input（embed_text）")
+
+st.write(f"##### {row.get('name','')}さんの入力データ / Input Data for {row.get('name','')}（embed_text）")
 
 # 横4列
 col1, col2, col3, col4 = st.columns(4)
 
-# role_norm
 with col1:
     st.markdown(f"**名前 / Name**<br>{row.get('name','')}", unsafe_allow_html=True)
 
-# name
 with col2:
     st.markdown(f"**研究者区分 / Role**<br>{query_label}", unsafe_allow_html=True)
 
-# アンケートURL（ボタンじゃないリンク）
 with col3:
     url = row.get("url", "")
     if pd.notna(url) and str(url).strip():
@@ -716,7 +756,6 @@ with col3:
     else:
         st.markdown("**アンケートURL / Survey URL**<br>なし / None", unsafe_allow_html=True)
 
-# TRIOS URL
 with col4:
     trios = row.get("matched_url", "")
     if pd.notna(trios) and str(trios).strip():
@@ -727,18 +766,27 @@ with col4:
     else:
         st.markdown("**TRIOS URL**<br>なし / None", unsafe_allow_html=True)
 
+# 修論
 theses = row.get("masters_thesis_titles", [])
 
 st.markdown(
-    "**担当修論 / supervised master's theses**<br>"
+    "<br><b>担当修論 / Supervised Master's Theses</b><br>"
     + ("<br>".join(f"・{t}" for t in theses) if theses else "なし / None"),
     unsafe_allow_html=True
 )
-# embed_text
-embed_text = str(row.get("embed_text", ""))  # NaN対策
-st.write("**embed_text 文字数 / length :**", len(embed_text))
-st.text_area("embed_text（類似度計算に使った全文 / Full text used for similarity）", embed_text, height=250)
 
+# embed_text
+embed_text = str(row.get("embed_text", ""))
+
+st.write("**embed_text 文字数 / Length:**", len(embed_text))
+st.text_area(
+    "embed_text（類似度計算に使った全文 / Full text used for similarity）",
+    embed_text,
+    height=250
+)
+
+# 枠終了
+st.markdown("</div>", unsafe_allow_html=True)
 # ---- 全件表示（ここから即時）----
 sims = sim_matrix[sel_idx]  # shape: [n_doc]
 order_idx = np.argsort(-sims)  # 全件ソート（n_doc 件）
