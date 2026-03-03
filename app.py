@@ -593,9 +593,13 @@ st.markdown("""
 ### 研究者区分の定義 / Definition of Researcher Categories
 
 **AI研究者 / AI Researcher**
+            
 AI for Science「チャレンジ型」公募に向けたアンケート調査【項目2：研究へのAIの活用経験と意識】の回答が「AIそのものやAIの高度化を研究している」を選択した方
+
 Those who selected“I conduct research on AI itself or on the advancement of AI technologies.” in Item 2 of the AI for Science “Challenge-Type” Call for Proposals survey.
+
 **他分野研究者 / Domain Researcher**
+            
 上記以外の選択肢を選んだ方/Those who selected any other response in the same survey item.
 """)
 
@@ -714,29 +718,24 @@ else:
 # ==============================
 # 入力データ枠スタート
 # ==============================
-# 1) 枠用CSS（1回だけでOK：ページ上部に置くのが理想）
-st.markdown("""
-<style>
-.input-box {
-  border: 2px solid #4A90E2;
-  border-radius: 12px;
-  padding: 20px;
-  background-color: #F8FAFF;
-  margin-bottom: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
+from streamlit_extras.stylable_container import stylable_container
 
-# 2) 囲み開始（containerの中身を全部囲む）
-box = st.container()
-with box:
-    st.markdown('<div class="input-box">', unsafe_allow_html=True)
-
+with stylable_container(
+    key="input_data_box",
+    css_styles="""
+    {
+        border: 2px solid #4A90E2;
+        border-radius: 12px;
+        padding: 20px;
+        background-color: #F8FAFF;
+        margin-bottom: 20px;
+    }
+    """
+):
     row = query_df.iloc[sel_idx]
 
     st.write(f"##### {row.get('name','')}さんの入力データ / Input Data for {row.get('name','')}（embed_text）")
 
-    # 横4列
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -765,7 +764,6 @@ with box:
         else:
             st.markdown("**TRIOS URL**<br>なし / None", unsafe_allow_html=True)
 
-    # 修論
     theses = row.get("masters_thesis_titles", [])
     st.markdown(
         "<br><b>担当修論 / Supervised Master's Theses</b><br>"
@@ -773,7 +771,6 @@ with box:
         unsafe_allow_html=True
     )
 
-    # embed_text
     embed_text = str(row.get("embed_text", ""))
     st.write("**embed_text 文字数 / Length:**", len(embed_text))
     st.text_area(
@@ -781,9 +778,6 @@ with box:
         embed_text,
         height=250
     )
-
-    # 囲み終了
-    st.markdown('</div>', unsafe_allow_html=True)
 # ---- 全件表示（ここから即時）----
 sims = sim_matrix[sel_idx]  # shape: [n_doc]
 order_idx = np.argsort(-sims)  # 全件ソート（n_doc 件）
