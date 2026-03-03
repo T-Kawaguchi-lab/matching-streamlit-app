@@ -630,7 +630,6 @@ st.markdown("""
     - リスク・レジリエンス工学学位プログラム / Master’s/Doctoral Program in Risk and Resilience Engineering  
     - 情報理工学位プログラム / Master’s/Doctoral Program in Computer Science  
 """)
-st.caption("初回だけ全員分の埋め込みと類似度行列を作ります。以降は人物を選ぶだけで即表示されます。 / First time only: compute embeddings and similarity matrices for everyone. After that, selecting a person is instant.")
 
 with st.spinner("全員分の類似度を事前計算しています。（初回のみとても重いです）10分程度かかります。... / Precomputing similarity (very heavy only on first run; may take ~10 minutes)..."):
     mats = precompute_similarity_matrices(
