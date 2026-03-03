@@ -589,6 +589,18 @@ else:
 
 ai_df = df[df["role_norm"] == "ai_researcher"].reset_index(drop=True)
 other_df = df[df["role_norm"] == "other_field_researcher"].reset_index(drop=True)
+
+
+c1, c2, c3 = st.columns(3)
+c1.metric("総件数 / Total", len(df))
+c2.metric("AI研究者 / AI", len(ai_df))
+c3.metric("他分野研究者 / Domain", len(other_df))
+
+if len(ai_df) == 0 or len(other_df) == 0:
+    st.warning("role分離の結果、片側が0件です。meta.role の値（表記ゆれ）を確認してください。 / After role split, one side is 0. Please check meta.role values (variants).")
+    st.write("role_rawのユニーク（先頭30）: ", sorted({str(v) for v in roles_raw if v is not None})[:30])
+    st.stop()
+
 st.markdown("""
 ### 研究者区分の定義 / Definition of Researcher Categories
 
@@ -602,18 +614,6 @@ Those who selected“I conduct research on AI itself or on the advancement of AI
             
 上記以外の選択肢を選んだ方/Those who selected any other response in the same survey item.
 """)
-
-c1, c2, c3 = st.columns(3)
-c1.metric("総件数 / Total", len(df))
-c2.metric("AI研究者 / AI", len(ai_df))
-c3.metric("他分野研究者 / Domain", len(other_df))
-
-if len(ai_df) == 0 or len(other_df) == 0:
-    st.warning("role分離の結果、片側が0件です。meta.role の値（表記ゆれ）を確認してください。 / After role split, one side is 0. Please check meta.role values (variants).")
-    st.write("role_rawのユニーク（先頭30）: ", sorted({str(v) for v in roles_raw if v is not None})[:30])
-    st.stop()
-
-
 # ------------------------
 # Precompute (HEAVY) ONCE
 # ------------------------
@@ -734,7 +734,7 @@ with stylable_container(
     row = query_df.iloc[sel_idx]
 
     st.write(f"#### {row.get('name','')}さんの入力データ / Input Data for {row.get('name','')}")
-    
+
     st.write("")
     col1, col2, col3, col4 = st.columns(4)
 
