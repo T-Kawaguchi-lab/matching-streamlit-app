@@ -26,6 +26,7 @@ TEXT_KEY_PRIORITY = [
     "canonical_card_text",
 ]
 
+
 st.set_page_config(page_title="AI↔他分野 推薦（AI研究者と他分野研究者TRIOSあり） / AI↔Domain Matching (TRIOS available）", layout="wide")
 st.title("AI研究者 ↔ 他分野研究者 推薦 / AI↔Domain Researcher Matching")
 st.caption("E5（query:/passage:）+ normalize_embeddings=True を使用して類似度を計算します。 / Similarity is computed with E5 (query:/passage:) + normalize_embeddings=True.")
