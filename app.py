@@ -733,7 +733,7 @@ with stylable_container(
 ):
     row = query_df.iloc[sel_idx]
 
-    st.write(f"#### {row.get('name','')}さんの入力データ / Input Data for {row.get('name','')}（embed_text）")
+    st.write(f"#### {row.get('name','')}さんの入力データ / Input Data for {row.get('name','')}")
 
     col1, col2, col3, col4 = st.columns(4)
 
