@@ -605,13 +605,13 @@ if len(ai_df) == 0 or len(other_df) == 0:
 st.markdown("""
 ### 研究者区分の定義 / Definition of Researcher Categories
 
-**AI研究者 / AI Researcher**
+**AI研究者 / AI Researcher：**
             
 AI for Science「チャレンジ型」公募に向けたアンケート調査【項目2：研究へのAIの活用経験と意識】の回答が「AIそのものやAIの高度化を研究している」を選択した方
 
 Those who selected“I conduct research on AI itself or on the advancement of AI technologies.” in Item 2 of the AI for Science “Challenge-Type” Call for Proposals survey.
 
-**他分野研究者 / Domain Researcher**
+**他分野研究者 / Domain Researcher：**
             
 上記以外の選択肢を選んだ方/Those who selected any other response in the same survey item.
 """)
@@ -624,7 +624,7 @@ st.markdown("""
 
 - アンケート結果  / Questionnaire results  
 - TRIOS  
-- 2025年度修論タイトル及び指導教員リスト  
+- 下記学位プログラム2025年度修論タイトル及び指導教員リスト  
     - サービス工学学位プログラム / Master’s Program in Service Engineering  
     - 社会工学学位プログラム / Master’s Program in Policy and Planning Sciences  
     - 知能機能システム学位プログラム / Master’s/Doctoral Program in Intelligent and Mechanical Interaction Systems  
