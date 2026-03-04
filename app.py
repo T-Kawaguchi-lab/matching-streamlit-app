@@ -650,11 +650,12 @@ st.success("事前計算完了 / Precompute finished")
 # ------------------------
 # Fast UI: pick person (from ALL) -> show opposite side
 # ------------------------
+st.markdown('<div id="person_selectbox"></div>', unsafe_allow_html=True)
 st.markdown(
     '### 人物を選択 / People search <small>（名前を入力してください / Type a name）</small>',
     unsafe_allow_html=True
 )
-st.markdown('<div id="person_selectbox"></div>', unsafe_allow_html=True)
+
 st.markdown(
     """
     <style>
