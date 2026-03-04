@@ -29,7 +29,6 @@ TEXT_KEY_PRIORITY = [
 
 st.set_page_config(page_title="AI↔他分野 推薦 / AI↔Domain Matching", layout="wide")
 st.title("AI研究者 ↔ 他分野研究者 推薦 / AI↔Domain Researcher Matching")
-st.caption("E5（query:/passage:）+ normalize_embeddings=True を使用して類似度を計算します。 / Similarity is computed with E5 (query:/passage:) + normalize_embeddings=True.")
 
 APP_DIR = Path(__file__).resolve().parent
 DATA_DIR = APP_DIR / "data"
@@ -536,9 +535,15 @@ else:
         map_df = read_csv_from_path(DATA_DIR / selected_csv_name)
         csv_label = selected_csv_name
 
-st.caption(f"データ / Data : JSONL={jsonl_label} / CSV={csv_label}")
+st.markdown(
+    '##### アンケートに回答頂いた方の名前を <a href="#person_selectbox"><b>名前入力欄</b></a> に入力すると，下記のデータを使用して計算した研究者間の類似度を表示します．',
+    unsafe_allow_html=True
+)
 
-
+st.markdown(
+    '##### If you enter the name of a person who responded to the questionnaire in <a href="#person_selectbox"><b>名前入力欄</b></a>, the similarity between researchers calculated using the data below.',
+    unsafe_allow_html=True
+)
 # ------------------------
 # Build df
 # ------------------------
