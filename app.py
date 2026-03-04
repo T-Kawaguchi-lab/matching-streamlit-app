@@ -654,7 +654,7 @@ st.markdown(
     '### 人物を選択 / People search <small>（名前を入力してください / Type a name）</small>',
     unsafe_allow_html=True
 )
-
+st.markdown('<div id="person_selectbox"></div>', unsafe_allow_html=True)
 st.markdown(
     """
     <style>
@@ -686,7 +686,7 @@ def format_func(_id):
     if _id is None:
         return "🔍(名前入力 / Type name)"
     return id_to_label[_id]
-st.markdown('<div id="person_selectbox"></div>', unsafe_allow_html=True)
+
 picked_id = st.selectbox(
     "研究者リスト / Researcher list ※「🔍(名前入力 / Type name)」は消して入力してください / delete the ”🔍(名前入力 / Type name)” and type to search",
     options=options,
