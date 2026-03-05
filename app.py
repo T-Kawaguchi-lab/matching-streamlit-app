@@ -541,7 +541,7 @@ st.markdown(
 )
 
 st.markdown(
-    '##### If you enter the name of a person who responded to the questionnaire in <a href="#person_selectbox"><b>名前入力欄</b></a>, the similarity between researchers calculated using the data below.',
+    '##### If you enter the name of a person who responded to the questionnaire in <a href="#person_selectbox"><b>Type name</b></a>, the similarity between researchers calculated using the data below.',
     unsafe_allow_html=True
 )
 # ------------------------
